@@ -3,788 +3,529 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ManuTrack — Manufacturing Project System</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>ManuTrack v2 — Manufacturing Project System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0d14;
-    --surface: #111520;
-    --surface2: #171d2e;
-    --surface3: #1e2740;
-    --border: #2a3352;
-    --accent: #3d7eff;
-    --accent2: #00e5b0;
-    --danger: #ff4d6a;
-    --warn: #ffb340;
-    --success: #00c97a;
-    --text: #e8edf8;
-    --muted: #6b7a99;
-    --font-head: 'Syne', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
-    --font-mono: 'DM Mono', monospace;
-  }
+:root {
+  --bg: #07090f;
+  --s1: #0d1117;
+  --s2: #131923;
+  --s3: #1a2233;
+  --s4: #1f2a40;
+  --border: #243048;
+  --border2: #2e3d5c;
+  --accent: #1d6fee;
+  --accent2: #00d4aa;
+  --warn: #f5a623;
+  --danger: #e8334a;
+  --success: #10b981;
+  --text: #dce6f5;
+  --muted: #5a6f8a;
+  --muted2: #3d5070;
+  --fh: 'Barlow Condensed', sans-serif;
+  --fb: 'Barlow', sans-serif;
+  --fm: 'JetBrains Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh;overflow-x:hidden;}
 
-  * { margin:0; padding:0; box-sizing:border-box; }
+/* ── LOGIN ── */
+#loginScreen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 70% 70% at 30% 50%,#0a1a3a 0%,#07090f 65%);
+  position:relative;overflow:hidden;
+}
+#loginScreen::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(29,111,238,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(29,111,238,0.04) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+.login-wrap{position:relative;z-index:2;display:grid;grid-template-columns:1fr 400px;gap:80px;align-items:center;max-width:900px;padding:40px;}
+.login-brand{color:var(--text);}
+.login-brand-logo{font-family:var(--fh);font-size:72px;font-weight:900;line-height:1;letter-spacing:-2px;margin-bottom:12px;}
+.login-brand-logo em{color:var(--accent);font-style:normal;}
+.login-brand-sub{font-size:15px;color:var(--muted);line-height:1.7;max-width:320px;}
+.login-brand-tag{display:inline-flex;align-items:center;gap:8px;margin-top:24px;padding:8px 16px;border:1px solid var(--border2);border-radius:4px;font-family:var(--fm);font-size:11px;color:var(--muted);letter-spacing:1px;}
+.login-brand-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);}
+.login-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:36px;}
+.login-card-title{font-family:var(--fh);font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:0.5px;}
+.login-card-sub{font-size:12px;color:var(--muted);font-family:var(--fm);letter-spacing:0.5px;margin-bottom:28px;}
+.role-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px;}
+.rtab{background:var(--s2);border:1.5px solid var(--border);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);}
+.rtab .ri{font-size:20px;display:block;margin-bottom:4px;}
+.rtab .rl{font-size:11px;font-weight:600;font-family:var(--fh);letter-spacing:0.5px;text-transform:uppercase;}
+.rtab:hover{border-color:var(--accent);color:var(--text);}
+.rtab.on{border-color:var(--accent);background:rgba(29,111,238,.12);color:var(--accent);}
+.lf{margin-bottom:14px;}
+.lf label{display:block;font-size:10px;color:var(--muted);font-family:var(--fm);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.lf input,.lf select{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:var(--fb);font-size:13px;outline:none;transition:border-color .2s;}
+.lf input:focus,.lf select:focus{border-color:var(--accent);}
+.lf select option{background:var(--s2);}
+.lbtn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:12px;font-family:var(--fh);font-size:16px;font-weight:800;letter-spacing:1px;cursor:pointer;margin-top:6px;transition:opacity .2s;}
+.lbtn:hover{opacity:.85;}
+.lerr{color:var(--danger);font-size:12px;text-align:center;margin-top:10px;min-height:18px;}
+.demo-hint{margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:10px;color:var(--muted2);font-family:var(--fm);line-height:1.8;}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-body);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* ── SHELL ── */
+#appShell{display:none;min-height:100vh;flex-direction:column;}
+.topbar{height:52px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;position:sticky;top:0;z-index:200;}
+.tb-logo{font-family:var(--fh);font-size:22px;font-weight:900;letter-spacing:-0.5px;}
+.tb-logo em{color:var(--accent);font-style:normal;}
+.tb-sep{width:1px;height:24px;background:var(--border);}
+.tb-role{font-family:var(--fm);font-size:10px;padding:3px 10px;border-radius:3px;border:1px solid;letter-spacing:0.8px;text-transform:uppercase;}
+.tb-role.admin{border-color:rgba(29,111,238,.5);color:var(--accent);background:rgba(29,111,238,.1);}
+.tb-role.dept{border-color:rgba(0,212,170,.5);color:var(--accent2);background:rgba(0,212,170,.1);}
+.tb-role.hod{border-color:rgba(245,166,35,.5);color:var(--warn);background:rgba(245,166,35,.1);}
+.tb-role.engineer{border-color:rgba(232,51,74,.5);color:var(--danger);background:rgba(232,51,74,.1);}
+.tb-user{font-size:12px;color:var(--muted);}
+.tb-sp{flex:1;}
+.bell-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:17px;padding:6px;position:relative;border-radius:4px;transition:color .2s;}
+.bell-btn:hover{color:var(--text);}
+.bell-ct{position:absolute;top:1px;right:1px;background:var(--danger);color:#fff;font-size:9px;font-family:var(--fm);width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.logout-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:5px;cursor:pointer;font-size:12px;font-family:var(--fb);transition:all .2s;}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger);}
 
-  /* ─── LOGIN SCREEN ─── */
-  #loginScreen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    background: radial-gradient(ellipse 80% 60% at 60% 40%, #1a2a5e 0%, #0a0d14 70%);
-  }
-  #loginScreen::before {
-    content:'';
-    position:absolute; inset:0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 39px, #1e2740 39px, #1e2740 40px),
-                repeating-linear-gradient(90deg, transparent, transparent 39px, #1e2740 39px, #1e2740 40px);
-    opacity:0.25;
-  }
+.body-wrap{display:flex;flex:1;min-height:calc(100vh - 52px);}
 
-  .login-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 48px;
-    width: 420px;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
-  }
-  .login-logo {
-    font-family: var(--font-head);
-    font-size: 28px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    margin-bottom: 6px;
-  }
-  .login-logo span { color: var(--accent); }
-  .login-sub {
-    color: var(--muted);
-    font-size: 13px;
-    margin-bottom: 36px;
-    font-family: var(--font-mono);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .role-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 28px;
-  }
-  .role-btn {
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 10px;
-    cursor: pointer;
-    transition: all .2s;
-    text-align: center;
-    color: var(--muted);
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 500;
-  }
-  .role-btn .role-icon { font-size: 22px; margin-bottom: 6px; display:block; }
-  .role-btn:hover { border-color: var(--accent); color: var(--text); }
-  .role-btn.active { border-color: var(--accent); background: rgba(61,126,255,0.12); color: var(--accent); }
+/* ── SIDEBAR ── */
+.sidebar{width:210px;background:var(--s1);border-right:1px solid var(--border);padding:16px 0;flex-shrink:0;overflow-y:auto;}
+.nav-sec{font-family:var(--fm);font-size:9px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:14px 16px 5px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;color:var(--muted);font-size:13px;cursor:pointer;transition:all .15s;border-left:2px solid transparent;user-select:none;}
+.nav-item .ni{font-size:15px;width:18px;text-align:center;}
+.nav-item:hover{color:var(--text);background:var(--s2);}
+.nav-item.on{color:var(--accent);border-left-color:var(--accent);background:rgba(29,111,238,.08);}
 
-  .login-field { margin-bottom: 14px; }
-  .login-field label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-family:var(--font-mono); letter-spacing:0.5px; text-transform:uppercase; }
-  .login-field select,
-  .login-field input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 11px 14px;
-    color: var(--text);
-    font-family: var(--font-body);
-    font-size: 14px;
-    outline: none;
-    transition: border-color .2s;
-  }
-  .login-field select:focus,
-  .login-field input:focus { border-color: var(--accent); }
-  .login-field select option { background: var(--surface2); }
+/* ── MAIN ── */
+.main{flex:1;padding:28px 30px;overflow-y:auto;background:var(--bg);}
+.pg{display:none;}
+.pg.on{display:block;}
 
-  .login-btn {
-    width: 100%;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 13px;
-    font-family: var(--font-head);
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    margin-top: 8px;
-    transition: opacity .2s;
-  }
-  .login-btn:hover { opacity: 0.88; }
-  .login-error { color: var(--danger); font-size: 12px; margin-top: 10px; text-align:center; min-height:18px; }
+/* ── TYPOGRAPHY ── */
+.pt{font-family:var(--fh);font-size:28px;font-weight:800;letter-spacing:-0.5px;margin-bottom:2px;}
+.ps{color:var(--muted);font-size:13px;margin-bottom:22px;}
 
-  /* ─── APP SHELL ─── */
-  #appShell { display:none; min-height:100vh; }
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+.stat{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+.stat-lbl{font-family:var(--fm);font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.stat-val{font-family:var(--fh);font-size:32px;font-weight:800;line-height:1;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:3px;}
 
-  .topbar {
-    height: 58px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 24px;
-    gap: 16px;
-    position: sticky; top:0; z-index:100;
-  }
-  .topbar-logo { font-family:var(--font-head); font-weight:800; font-size:18px; }
-  .topbar-logo span { color:var(--accent); }
-  .topbar-role {
-    background: rgba(61,126,255,0.15);
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    border: 1px solid rgba(61,126,255,0.3);
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-  .topbar-user { color: var(--muted); font-size: 13px; margin-left:4px; }
-  .topbar-spacer { flex:1; }
-  .alert-bell {
-    background: none; border: none; cursor:pointer;
-    color: var(--muted); font-size: 18px; position:relative;
-    padding: 6px;
-  }
-  .alert-count {
-    position:absolute; top:0; right:0;
-    background: var(--danger);
-    color:#fff; font-size:10px; font-family:var(--font-mono);
-    width:16px; height:16px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .logout-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor:pointer; font-size:13px;
-    font-family:var(--font-body);
-    transition: all .2s;
-  }
-  .logout-btn:hover { color:var(--danger); border-color:var(--danger); }
+/* ── CARD ── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
+.card-title{font-family:var(--fh);font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
 
-  /* ─── LAYOUT ─── */
-  .layout { display:flex; min-height:calc(100vh - 58px); }
-  .sidebar {
-    width: 220px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    padding: 20px 0;
-    flex-shrink: 0;
-  }
-  .nav-item {
-    display: flex; align-items:center; gap:10px;
-    padding: 10px 20px;
-    color: var(--muted);
-    font-size: 13.5px;
-    cursor: pointer;
-    transition: all .15s;
-    border-left: 2px solid transparent;
-    user-select:none;
-  }
-  .nav-item:hover { color:var(--text); background:var(--surface2); }
-  .nav-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(61,126,255,0.08); }
-  .nav-item .nav-icon { font-size:16px; width:20px; text-align:center; }
-  .nav-section { font-family:var(--font-mono); font-size:10px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; padding:18px 20px 6px; }
+/* ── BUTTONS ── */
+.btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-family:var(--fb);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{opacity:.85;}
+.btn-sm{padding:5px 11px;font-size:12px;}
+.btn-xs{padding:3px 8px;font-size:11px;}
+.btn-out{background:none;border:1px solid var(--border2);color:var(--muted);border-radius:6px;padding:7px 14px;font-family:var(--fb);font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-out:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:var(--danger);}
+.btn-success{background:var(--success);}
+.btn-warn{background:var(--warn);color:#000;}
 
-  .main { flex:1; padding: 28px 32px; overflow-y:auto; }
-  .page { display:none; }
-  .page.active { display:block; }
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-family:var(--fm);font-weight:500;letter-spacing:0.3px;white-space:nowrap;}
+.b-ok{background:rgba(16,185,129,.15);color:var(--success);border:1px solid rgba(16,185,129,.3);}
+.b-bad{background:rgba(232,51,74,.15);color:var(--danger);border:1px solid rgba(232,51,74,.3);}
+.b-warn{background:rgba(245,166,35,.15);color:var(--warn);border:1px solid rgba(245,166,35,.3);}
+.b-info{background:rgba(29,111,238,.15);color:var(--accent);border:1px solid rgba(29,111,238,.3);}
+.b-muted{background:rgba(90,111,138,.15);color:var(--muted);border:1px solid rgba(90,111,138,.3);}
+.b-closed{background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.2);}
+.b-open{background:rgba(245,166,35,.1);color:#fcd34d;border:1px solid rgba(245,166,35,.2);}
 
-  /* ─── COMMON COMPONENTS ─── */
-  .page-title {
-    font-family: var(--font-head);
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 4px;
-  }
-  .page-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-family:var(--fm);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 12px;font-size:12.5px;border-bottom:1px solid rgba(36,48,72,.5);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--s2);}
 
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-    margin-bottom: 16px;
-  }
-  .card-title {
-    font-family: var(--font-head);
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    display:flex; align-items:center; gap:8px;
-  }
+/* ── PROGRESS ── */
+.pbar-wrap{display:flex;align-items:center;gap:8px;}
+.pbar{flex:1;height:4px;background:var(--s3);border-radius:2px;overflow:hidden;}
+.pbar-fill{height:100%;border-radius:2px;transition:width .4s;}
+.pbar-pct{font-family:var(--fm);font-size:10px;color:var(--muted);width:28px;text-align:right;}
 
-  .btn {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 7px;
-    padding: 9px 18px;
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity .2s;
-  }
-  .btn:hover { opacity:.85; }
-  .btn-outline {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: 7px;
-    padding: 8px 16px;
-    font-size: 13px;
-    cursor:pointer;
-    font-family:var(--font-body);
-    transition: all .2s;
-  }
-  .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
-  .btn-danger { background:var(--danger); }
-  .btn-success { background:var(--success); }
-  .btn-sm { padding:6px 12px; font-size:12px; }
+/* ── MODAL ── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:1000;}
+.modal-ov.on{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:28px;width:660px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 40px 120px rgba(0,0,0,.8);}
+.modal-title{font-family:var(--fh);font-size:22px;font-weight:800;margin-bottom:2px;}
+.modal-sub{color:var(--muted);font-size:12px;margin-bottom:22px;}
+.modal-close{float:right;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;margin-top:-4px;line-height:1;}
+.modal-close:hover{color:var(--danger);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.fg{margin-bottom:12px;}
+.fg label{display:block;font-size:10px;color:var(--muted);font-family:var(--fm);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:5px;}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:9px 11px;color:var(--text);font-family:var(--fb);font-size:13px;outline:none;transition:border-color .2s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent);}
+.fg select option{background:var(--s2);}
+.fg textarea{resize:vertical;min-height:60px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);}
 
-  .badge {
-    display:inline-flex; align-items:center;
-    padding: 2px 8px; border-radius:20px;
-    font-size:11px; font-family:var(--font-mono); font-weight:500;
-    letter-spacing:0.3px;
-  }
-  .badge-success { background:rgba(0,201,122,0.15); color:var(--success); border:1px solid rgba(0,201,122,0.3); }
-  .badge-danger { background:rgba(255,77,106,0.15); color:var(--danger); border:1px solid rgba(255,77,106,0.3); }
-  .badge-warn { background:rgba(255,179,64,0.15); color:var(--warn); border:1px solid rgba(255,179,64,0.3); }
-  .badge-info { background:rgba(61,126,255,0.15); color:var(--accent); border:1px solid rgba(61,126,255,0.3); }
-  .badge-muted { background:rgba(107,122,153,0.15); color:var(--muted); border:1px solid rgba(107,122,153,0.3); }
+/* ── FLASH ANIMATIONS ── */
+@keyframes flash{0%,100%{border-color:var(--danger);box-shadow:0 0 0 0 rgba(232,51,74,0);}50%{border-color:#ff1a35;box-shadow:0 0 12px 3px rgba(232,51,74,.3);}}
+@keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.3;}}
+.overdue-flash{animation:flash 1.8s ease-in-out infinite;}
+.pulse{animation:pulse-dot 1.4s ease-in-out infinite;}
 
-  /* Flash animation for overdue */
-  @keyframes flash-border {
-    0%,100% { border-color: var(--danger); box-shadow: 0 0 0 0 rgba(255,77,106,0); }
-    50% { border-color: #ff0033; box-shadow: 0 0 12px 3px rgba(255,77,106,0.35); }
-  }
-  .overdue-flash { animation: flash-border 1.6s ease-in-out infinite; }
+/* ── ALERT PANEL ── */
+.alert-panel{position:fixed;top:52px;right:0;width:340px;background:var(--s1);border-left:1px solid var(--border);height:calc(100vh - 52px);overflow-y:auto;z-index:150;transform:translateX(100%);transition:transform .3s;padding:18px;}
+.alert-panel.on{transform:translateX(0);}
+.al-item{background:var(--s2);border-left:3px solid var(--danger);border-radius:0 6px 6px 0;padding:11px 13px;margin-bottom:9px;}
+.al-proj{font-weight:600;font-size:13px;margin-bottom:2px;}
+.al-msg{color:var(--muted);font-size:11.5px;}
+.al-days{font-family:var(--fm);font-size:10px;color:var(--danger);margin-top:4px;}
 
-  /* ─── PROJECT CARDS ─── */
-  .projects-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:16px; }
-  .project-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    cursor:pointer;
-    transition: all .2s;
-  }
-  .project-card:hover { border-color:var(--accent); transform:translateY(-1px); }
-  .project-card.delayed { border-color: var(--danger); }
-  .project-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
-  .project-name { font-family:var(--font-head); font-size:16px; font-weight:700; }
-  .project-id { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
-  .project-meta { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
-  .project-progress { margin-bottom:6px; }
-  .progress-label { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:5px; }
-  .progress-bar { height:5px; background:var(--surface3); border-radius:3px; overflow:hidden; }
-  .progress-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .4s; }
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--s2);border:1px solid var(--border2);border-radius:8px;padding:12px 18px;font-size:13px;z-index:2000;transform:translateY(70px);opacity:0;transition:all .3s;max-width:300px;}
+.toast.on{transform:translateY(0);opacity:1;}
+.toast.ok{border-color:var(--success);}
+.toast.err{border-color:var(--danger);}
 
-  /* ─── DEPT PIPELINE ─── */
-  .dept-pipeline { display:flex; flex-direction:column; gap:10px; }
-  .dept-row {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 18px;
-    display:flex; align-items:center; gap:14px;
-  }
-  .dept-row.overdue-flash { }
-  .dept-name { font-weight:600; font-size:13px; width:110px; flex-shrink:0; }
-  .dept-steps { flex:1; display:flex; gap:6px; flex-wrap:wrap; }
-  .step-chip {
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size:11px;
-    font-family:var(--font-mono);
-    border: 1px solid var(--border);
-    cursor:pointer;
-    transition: all .15s;
-    background: var(--surface3);
-    color: var(--muted);
-  }
-  .step-chip.done { background:rgba(0,201,122,0.12); color:var(--success); border-color:rgba(0,201,122,0.3); }
-  .step-chip.inprogress { background:rgba(61,126,255,0.12); color:var(--accent); border-color:rgba(61,126,255,0.3); }
-  .step-chip.overdue { background:rgba(255,77,106,0.12); color:var(--danger); border-color:rgba(255,77,106,0.3); animation: flash-border 1.5s infinite; }
-  .dept-deadline { font-family:var(--font-mono); font-size:11px; color:var(--muted); white-space:nowrap; }
+/* ── PROJECT CARDS GRID ── */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+.proj-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;transition:all .2s;}
+.proj-card:hover{border-color:var(--accent);transform:translateY(-1px);}
+.proj-card.delayed{border-color:var(--danger);}
+.pc-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.pc-name{font-family:var(--fh);font-size:18px;font-weight:800;}
+.pc-id{font-family:var(--fm);font-size:10px;color:var(--muted);margin-top:1px;}
+.pc-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
 
-  /* ─── MODAL ─── */
-  .modal-overlay {
-    position:fixed; inset:0; background:rgba(0,0,0,0.7);
-    display:flex; align-items:center; justify-content:center;
-    z-index:1000; display:none;
-  }
-  .modal-overlay.open { display:flex; }
-  .modal {
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:14px;
-    padding:32px;
-    width:600px; max-width:95vw; max-height:90vh;
-    overflow-y:auto;
-    box-shadow: 0 40px 100px rgba(0,0,0,0.7);
-  }
-  .modal-title { font-family:var(--font-head); font-size:20px; font-weight:800; margin-bottom:4px; }
-  .modal-sub { color:var(--muted); font-size:13px; margin-bottom:24px; }
-  .modal-close { float:right; background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; margin-top:-4px; }
-  .modal-close:hover { color:var(--danger); }
+/* ── DEPT PIPELINE ── */
+.pipe-row{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.pipe-name{font-family:var(--fh);font-size:13px;font-weight:700;width:105px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.5px;}
+.pipe-steps{flex:1;display:flex;flex-wrap:wrap;gap:5px;}
+.step-chip{padding:3px 9px;border-radius:4px;font-size:10px;font-family:var(--fm);border:1px solid var(--border);cursor:pointer;transition:all .15s;background:var(--s3);color:var(--muted2);}
+.step-chip:hover{border-color:var(--accent);color:var(--accent);}
+.step-chip.done{background:rgba(16,185,129,.1);color:var(--success);border-color:rgba(16,185,129,.3);}
+.step-chip.inprogress{background:rgba(29,111,238,.1);color:var(--accent);border-color:rgba(29,111,238,.3);}
+.step-chip.overdue{background:rgba(232,51,74,.1);color:var(--danger);border-color:rgba(232,51,74,.3);animation:flash 1.8s infinite;}
+.step-chip.hold{background:rgba(245,166,35,.1);color:var(--warn);border-color:rgba(245,166,35,.3);}
+.pipe-info{font-family:var(--fm);font-size:10px;color:var(--muted);text-align:right;width:60px;flex-shrink:0;}
 
-  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
-  .form-group { margin-bottom:14px; }
-  .form-group label { display:block; font-size:11px; color:var(--muted); margin-bottom:6px; font-family:var(--font-mono); letter-spacing:0.5px; text-transform:uppercase; }
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width:100%;
-    background:var(--surface2);
-    border:1px solid var(--border);
-    border-radius:7px;
-    padding:10px 12px;
-    color:var(--text);
-    font-family:var(--font-body);
-    font-size:13px;
-    outline:none;
-    transition:border-color .2s;
-  }
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus { border-color:var(--accent); }
-  .form-group textarea { resize:vertical; min-height:70px; }
-  .form-group select option { background:var(--surface2); }
-  .form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+/* ── STEP DETAIL ── */
+.step-detail-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid rgba(36,48,72,.4);}
+.step-detail-row:last-child{border-bottom:none;}
+.sdr-num{font-family:var(--fm);font-size:10px;color:var(--muted2);width:22px;}
+.sdr-name{flex:1;font-size:13px;font-weight:500;}
+.sdr-dates{display:flex;flex-direction:column;gap:2px;font-family:var(--fm);font-size:10px;color:var(--muted);min-width:120px;}
+.sdr-dates .orig{color:var(--muted2);}
+.sdr-dates .curr{color:var(--warn);}
+.sdr-dates .curr.ontime{color:var(--accent2);}
+.sdr-status select{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:4px 8px;color:var(--text);font-size:11px;font-family:var(--fm);outline:none;cursor:pointer;}
 
-  /* ─── STATS ROW ─── */
-  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
-  .stat-card {
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:18px;
-  }
-  .stat-label { font-size:11px; color:var(--muted); font-family:var(--font-mono); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
-  .stat-value { font-family:var(--font-head); font-size:28px; font-weight:800; }
-  .stat-sub { font-size:11px; color:var(--muted); margin-top:3px; }
+/* ── HISTORY TIMELINE ── */
+.hist-timeline{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
+.hist-item{display:flex;align-items:center;gap:8px;font-family:var(--fm);font-size:10px;}
+.hist-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.hist-label{color:var(--muted);width:28px;}
+.hist-date{color:var(--text);}
+.hist-date.shifted{color:var(--warn);}
 
-  /* ─── TABLE ─── */
-  .table-wrap { overflow-x:auto; }
-  table { width:100%; border-collapse:collapse; }
-  th { text-align:left; font-family:var(--font-mono); font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; padding:10px 14px; border-bottom:1px solid var(--border); }
-  td { padding:12px 14px; font-size:13px; border-bottom:1px solid rgba(42,51,82,0.5); vertical-align:middle; }
-  tr:last-child td { border-bottom:none; }
-  tr:hover td { background:var(--surface2); }
+/* ── IMPORT ZONE ── */
+.import-zone{border:2px dashed var(--border2);border-radius:10px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;background:var(--s2);}
+.import-zone:hover,.import-zone.drag{border-color:var(--accent);background:rgba(29,111,238,.05);}
+.import-zone .iz-icon{font-size:40px;margin-bottom:10px;}
+.import-zone h3{font-family:var(--fh);font-size:20px;font-weight:700;margin-bottom:6px;}
+.import-zone p{font-size:13px;color:var(--muted);}
 
-  /* ─── ALERT PANEL ─── */
-  .alert-panel {
-    position:fixed; top:58px; right:0; width:340px;
-    background:var(--surface); border-left:1px solid var(--border);
-    height:calc(100vh - 58px); overflow-y:auto;
-    z-index:200; transform:translateX(100%); transition:transform .3s;
-    padding:20px;
-  }
-  .alert-panel.open { transform:translateX(0); }
-  .alert-item {
-    background:var(--surface2);
-    border-left:3px solid var(--danger);
-    border-radius:0 8px 8px 0;
-    padding:12px 14px;
-    margin-bottom:10px;
-    font-size:12.5px;
-  }
-  .alert-item .alert-proj { font-weight:600; margin-bottom:3px; }
-  .alert-item .alert-msg { color:var(--muted); }
-  .alert-item .alert-time { font-family:var(--font-mono); font-size:10px; color:var(--danger); margin-top:4px; }
+/* ── DELAY BANNER ── */
+.delay-banner{background:rgba(232,51,74,.08);border:1px solid rgba(232,51,74,.3);border-radius:6px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--danger);}
+.cascade-banner{background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.3);border-radius:8px;padding:16px;margin-bottom:16px;}
+.cascade-banner h4{font-family:var(--fh);font-size:16px;font-weight:700;color:var(--warn);margin-bottom:8px;}
 
-  /* ─── DEPT UPDATE PAGE ─── */
-  .step-update-row {
-    display:flex; align-items:center; gap:12px;
-    padding:12px 0; border-bottom:1px solid rgba(42,51,82,0.5);
-  }
-  .step-update-row:last-child { border-bottom:none; }
-  .step-num { font-family:var(--font-mono); font-size:11px; color:var(--muted); width:24px; }
-  .step-name-label { flex:1; font-size:13px; }
-  .step-deadline-info { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
-  .step-status-select {
-    background:var(--surface2);
-    border:1px solid var(--border);
-    border-radius:6px;
-    padding:5px 10px;
-    color:var(--text);
-    font-size:12px;
-    font-family:var(--font-body);
-    outline:none;
-    cursor:pointer;
-  }
-  .step-status-select:focus { border-color:var(--accent); }
+/* ── HISTORY PILL ── */
+.hist-pill{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-family:var(--fm);font-size:9px;border:1px solid;}
+.hp-orig{border-color:rgba(90,111,138,.4);color:var(--muted);}
+.hp-rev{border-color:rgba(245,166,35,.4);color:var(--warn);}
+.hp-curr{border-color:rgba(29,111,238,.5);color:var(--accent);}
 
-  /* ─── HOD OVERVIEW ─── */
-  .hod-project-row {
-    background:var(--surface2);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:16px 20px;
-    margin-bottom:12px;
-  }
-  .hod-proj-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; cursor:pointer; }
-  .hod-proj-name { font-family:var(--font-head); font-size:15px; font-weight:700; flex:1; }
-  .hod-dept-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-  .hod-dept-cell {
-    background:var(--surface3);
-    border-radius:7px;
-    padding:10px 12px;
-    font-size:12px;
-  }
-  .hod-dept-label { color:var(--muted); font-size:10px; font-family:var(--font-mono); letter-spacing:0.5px; margin-bottom:4px; }
-  .hod-dept-pct { font-family:var(--font-head); font-size:18px; font-weight:800; }
+/* ── HOD ── */
+.hod-proj{background:var(--s2);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
+.hod-proj-hd{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;}
+.hod-dept-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 18px 14px;}
+.hod-dept-cell{background:var(--s3);border-radius:6px;padding:10px 12px;}
+.hdc-lbl{font-family:var(--fm);font-size:9px;color:var(--muted);letter-spacing:0.5px;margin-bottom:4px;text-transform:uppercase;}
+.hdc-val{font-family:var(--fh);font-size:22px;font-weight:800;}
 
-  /* ─── NOTIFICATION TOAST ─── */
-  .toast {
-    position:fixed; bottom:24px; right:24px;
-    background:var(--surface2);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:14px 20px;
-    font-size:13px;
-    z-index:2000;
-    transform:translateY(80px); opacity:0;
-    transition: all .3s;
-    max-width:320px;
-  }
-  .toast.show { transform:translateY(0); opacity:1; }
-  .toast.success { border-color:var(--success); }
-  .toast.error { border-color:var(--danger); }
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty .ei{font-size:48px;margin-bottom:12px;}
 
-  .section-divider { height:1px; background:var(--border); margin:20px 0; }
+/* ── SECTION HEADER ── */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
 
-  /* ─── RESPONSIVE ─── */
-  @media(max-width:768px) {
-    .stats-row { grid-template-columns:1fr 1fr; }
-    .hod-dept-grid { grid-template-columns:1fr 1fr; }
-    .form-row { grid-template-columns:1fr; }
-    .sidebar { display:none; }
-  }
+.chevron{transition:transform .2s;display:inline-block;}
+.chevron.open{transform:rotate(90deg);}
 
-  .empty-state {
-    text-align:center; padding:60px 20px; color:var(--muted);
-  }
-  .empty-state .empty-icon { font-size:48px; margin-bottom:12px; }
-  .empty-state p { font-size:14px; }
+/* ── IMPORT SHEET TABS ── */
+.sheet-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.stab{padding:6px 14px;border-radius:4px;font-family:var(--fm);font-size:11px;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .2s;}
+.stab:hover{border-color:var(--accent2);color:var(--accent2);}
+.stab.on{border-color:var(--accent2);color:var(--accent2);background:rgba(0,212,170,.08);}
 
-  .inline-edit { display:inline-flex; align-items:center; gap:6px; }
-  .inline-input {
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:5px; padding:3px 8px; color:var(--text);
-    font-size:12px; font-family:var(--font-mono); outline:none;
-  }
-  .inline-input:focus { border-color:var(--accent); }
+/* ── STEP UPDATE DEPT ── */
+.sup-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(36,48,72,.4);}
+.sup-row:last-child{border-bottom:none;}
+.sup-num{font-family:var(--fm);font-size:10px;color:var(--muted2);width:22px;flex-shrink:0;}
+.sup-name{flex:1;}
+.sup-name .sn-main{font-size:13px;font-weight:500;}
+.sup-name .sn-note{font-size:11px;color:var(--muted);margin-top:2px;}
+.sup-dl{font-family:var(--fm);font-size:10px;white-space:nowrap;}
+.sup-sel{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:5px 9px;color:var(--text);font-size:11px;font-family:var(--fm);outline:none;cursor:pointer;}
+.note-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:var(--fm);transition:all .2s;}
+.note-btn:hover{border-color:var(--accent2);color:var(--accent2);}
 
-  .delay-banner {
-    background:rgba(255,77,106,0.1);
-    border:1px solid rgba(255,77,106,0.3);
-    border-radius:8px;
-    padding:12px 16px;
-    margin-bottom:16px;
-    display:flex; align-items:center; gap:10px;
-    font-size:13px;
-    color: var(--danger);
-  }
-
-  /* Step management in admin */
-  .steps-list { display:flex; flex-direction:column; gap:6px; }
-  .step-admin-row {
-    display:flex; align-items:center; gap:10px;
-    background:var(--surface2); border-radius:7px; padding:10px 12px;
-    border:1px solid var(--border);
-  }
-  .step-admin-name { flex:1; font-size:13px; }
-  .step-admin-deadline { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
-
-  .chevron { transition: transform .2s; }
-  .chevron.open { transform: rotate(90deg); }
+.two-col{display:grid;grid-template-columns:1fr 280px;gap:16px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}.stats-row{grid-template-columns:1fr 1fr;}.hod-dept-grid{grid-template-columns:1fr 1fr;}.login-wrap{grid-template-columns:1fr;}.login-brand{display:none;}}
 </style>
 </head>
 <body>
 
-<!-- ════════ LOGIN SCREEN ════════ -->
+<!-- ══════════════════ LOGIN ══════════════════ -->
 <div id="loginScreen">
-  <div class="login-card">
-    <div class="login-logo">Manu<span>Track</span></div>
-    <div class="login-sub">Manufacturing Project System</div>
-
-    <div class="role-grid">
-      <div class="role-btn active" onclick="selectRole('admin')" id="roleBtn-admin">
-        <span class="role-icon">🛡️</span>Project Admin
-      </div>
-      <div class="role-btn" onclick="selectRole('dept')" id="roleBtn-dept">
-        <span class="role-icon">🏭</span>Department
-      </div>
-      <div class="role-btn" onclick="selectRole('hod')" id="roleBtn-hod">
-        <span class="role-icon">👔</span>HOD
-      </div>
-      <div class="role-btn" onclick="selectRole('engineer')" id="roleBtn-engineer">
-        <span class="role-icon">⚙️</span>Project Engineer
-      </div>
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="login-brand-logo">Manu<em>Track</em></div>
+      <div style="font-family:var(--fh);font-size:18px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">Project Management System</div>
+      <div class="login-brand-sub">End-to-end manufacturing project tracking with Excel import, department-level accountability, automatic delay cascading, and full audit history.</div>
+      <div class="login-brand-tag">MANUFACTURING OPERATIONS PLATFORM</div>
     </div>
-
-    <div id="deptSelect" class="login-field" style="display:none">
-      <label>Department</label>
-      <select id="loginDept">
-        <option value="marketing">Marketing</option>
-        <option value="engineering">Engineering</option>
-        <option value="purchase">Purchase</option>
-        <option value="qac">QAC</option>
-        <option value="welding">Welding</option>
-        <option value="production">Production</option>
-        <option value="logistics">Logistics</option>
-        <option value="finance">Finance</option>
-      </select>
-    </div>
-
-    <div class="login-field">
-      <label>Password</label>
-      <input type="password" id="loginPassword" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-
-    <button class="login-btn" onclick="doLogin()">Sign In →</button>
-    <div class="login-error" id="loginError"></div>
-
-    <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; color:var(--muted); font-family:var(--font-mono);">
-      DEMO PASSWORDS: admin→admin123 | dept→dept123 | hod→hod123 | engineer→eng123
+    <div class="login-card">
+      <div class="login-card-title">Sign In</div>
+      <div class="login-card-sub">SELECT ROLE → ENTER PASSWORD</div>
+      <div class="role-tabs">
+        <div class="rtab on" onclick="selRole('admin')" id="rb-admin"><span class="ri">🛡️</span><span class="rl">Project Admin</span></div>
+        <div class="rtab" onclick="selRole('dept')" id="rb-dept"><span class="ri">🏭</span><span class="rl">Department</span></div>
+        <div class="rtab" onclick="selRole('hod')" id="rb-hod"><span class="ri">👔</span><span class="rl">HOD</span></div>
+        <div class="rtab" onclick="selRole('engineer')" id="rb-engineer"><span class="ri">⚙️</span><span class="rl">Proj. Engineer</span></div>
+      </div>
+      <div id="deptDiv" class="lf" style="display:none">
+        <label>Department</label>
+        <select id="loginDept">
+          <option value="Marketing">Marketing</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Purchase">Purchase</option>
+          <option value="QAC">QAC</option>
+          <option value="Welding">Welding</option>
+          <option value="Production">Production</option>
+          <option value="Logistics">Logistics</option>
+          <option value="Finance">Finance</option>
+        </select>
+      </div>
+      <div class="lf"><label>Password</label><input type="password" id="loginPw" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()"></div>
+      <button class="lbtn" onclick="login()">SIGN IN →</button>
+      <div class="lerr" id="loginErr"></div>
+      <div class="demo-hint">
+        admin → admin123 &nbsp;|&nbsp; dept → dept123<br>
+        hod → hod123 &nbsp;|&nbsp; engineer → eng123
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ════════ APP SHELL ════════ -->
-<div id="appShell">
-  <!-- TOPBAR -->
+<!-- ══════════════════ APP SHELL ══════════════════ -->
+<div id="appShell" style="display:none;flex-direction:column;">
   <div class="topbar">
-    <div class="topbar-logo">Manu<span>Track</span></div>
-    <div class="topbar-role" id="topbarRole">—</div>
-    <div class="topbar-user" id="topbarUser"></div>
-    <div class="topbar-spacer"></div>
-    <button class="alert-bell" id="alertBell" onclick="toggleAlertPanel()" style="display:none">
-      🔔
-      <div class="alert-count" id="alertCount" style="display:none">0</div>
+    <div class="tb-logo">Manu<em>Track</em></div>
+    <div class="tb-sep"></div>
+    <div class="tb-role" id="tbRole"></div>
+    <div class="tb-user" id="tbUser"></div>
+    <div class="tb-sp"></div>
+    <button class="bell-btn" id="bellBtn" onclick="toggleAlert()" style="display:none">
+      🔔<div class="bell-ct" id="bellCt" style="display:none">0</div>
     </button>
-    <button class="logout-btn" onclick="doLogout()">Logout</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
-
-  <div class="layout">
-    <!-- SIDEBAR -->
+  <div class="body-wrap">
     <div class="sidebar" id="sidebar"></div>
-
-    <!-- MAIN -->
     <div class="main" id="mainArea"></div>
   </div>
 </div>
 
 <!-- ALERT PANEL -->
 <div class="alert-panel" id="alertPanel">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-    <div style="font-family:var(--font-head);font-weight:700;font-size:15px;">⚠ Overdue Alerts</div>
-    <button onclick="toggleAlertPanel()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;">×</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <div style="font-family:var(--fh);font-weight:800;font-size:17px;">⚠ Overdue Alerts</div>
+    <button onclick="toggleAlert()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;">×</button>
   </div>
   <div id="alertList"></div>
 </div>
 
-<!-- MODAL OVERLAY -->
-<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal" id="modalContent"></div>
+<!-- MODAL -->
+<div class="modal-ov" id="modalOv" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBox"></div>
 </div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- CASCADE CONFIRM MODAL -->
+<div class="modal-ov" id="cascadeOv">
+  <div class="modal" id="cascadeBox"></div>
+</div>
+
 <script>
-// ════════════════════════════════════════
-//  DATA LAYER — localStorage persistence
-// ════════════════════════════════════════
+// ═══════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════
 const DEPTS = ['Marketing','Engineering','Purchase','QAC','Welding','Production','Logistics','Finance'];
+const DEPT_MAP = {
+  'ENGG':['Engineering'],'ENGG.':['Engineering'],'ENGG/ QAC':['Engineering','QAC'],
+  'PURCHASE':['Purchase'],'Purchase':['Purchase'],'QAC':['QAC'],'QAC/WELDING':['QAC','Welding'],
+  'QC':['QAC'],'WELDING':['Welding'],'PRODUCTION':['Production'],'PROD':['Production'],
+  'LOGISTICS':['Logistics'],'MARKETING':['Marketing'],'MKT':['Marketing'],
+  'PROJECTS':['Marketing'],'PROJ':['Marketing'],'FINANCE':['Finance'],
+  'ENGG/QAC':['Engineering','QAC']
+};
+const PW = {admin:'admin123',dept:'dept123',hod:'hod123',engineer:'eng123'};
 
-function loadData() {
-  const raw = localStorage.getItem('manutrack_data');
-  if (raw) return JSON.parse(raw);
-  // Default seed data
-  return {
-    projects: [],
-    nextProjectId: 1
-  };
+// ═══════════════════════════════════════════════
+//  DATA LAYER
+// ═══════════════════════════════════════════════
+function loadDB(){
+  try{ return JSON.parse(localStorage.getItem('mtv2')||'{}'); }catch(e){ return {}; }
 }
+function saveDB(db){ localStorage.setItem('mtv2',JSON.stringify(db)); }
 
-function saveData(data) {
-  localStorage.setItem('manutrack_data', JSON.stringify(data));
-}
+let DB = loadDB();
+if(!DB.projects) DB.projects = [];
+if(!DB.nextId) DB.nextId = 1;
 
-let DB = loadData();
-
-// ════════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  AUTH
-// ════════════════════════════════════════
-const PASSWORDS = { admin:'admin123', dept:'dept123', hod:'hod123', engineer:'eng123' };
-let currentUser = null;
-let selectedRole = 'admin';
+// ═══════════════════════════════════════════════
+let CU = null; // current user
+let selRole_val = 'admin';
 
-function selectRole(role) {
-  selectedRole = role;
-  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('roleBtn-'+role).classList.add('active');
-  document.getElementById('deptSelect').style.display = role === 'dept' ? 'block' : 'none';
+function selRole(r){
+  selRole_val = r;
+  document.querySelectorAll('.rtab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('rb-'+r).classList.add('on');
+  document.getElementById('deptDiv').style.display = r==='dept'?'block':'none';
 }
 
-function doLogin() {
-  const pw = document.getElementById('loginPassword').value;
-  const err = document.getElementById('loginError');
-  if (pw !== PASSWORDS[selectedRole]) {
-    err.textContent = 'Incorrect password. Please try again.';
-    return;
-  }
-  err.textContent = '';
-  const dept = selectedRole === 'dept' ? document.getElementById('loginDept').value : null;
-  currentUser = { role: selectedRole, dept };
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appShell').style.display = 'block';
+function login(){
+  const pw = document.getElementById('loginPw').value;
+  const err = document.getElementById('loginErr');
+  if(pw !== PW[selRole_val]){ err.textContent='Incorrect password.'; return; }
+  err.textContent='';
+  CU = { role:selRole_val, dept: selRole_val==='dept'?document.getElementById('loginDept').value:null };
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='flex';
   bootApp();
 }
 
-function doLogout() {
-  currentUser = null;
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('appShell').style.display = 'none';
-  document.getElementById('loginPassword').value = '';
+function logout(){
+  CU=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginPw').value='';
 }
 
-// ════════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  APP BOOT
-// ════════════════════════════════════════
-let currentPage = null;
+// ═══════════════════════════════════════════════
+const NAV = {
+  admin:[
+    {i:'📊',l:'Dashboard',p:'adminDash'},
+    {i:'📁',l:'All Projects',p:'adminProjects'},
+    {i:'📤',l:'Import Project',p:'adminImport'},
+    {i:'➕',l:'New Project',p:'adminNew'},
+  ],
+  dept:[
+    {i:'📋',l:'My Dashboard',p:'deptDash'},
+    {i:'✏️',l:'Update Steps',p:'deptUpdate'},
+  ],
+  hod:[
+    {i:'📊',l:'Overview',p:'hodOverview'},
+    {i:'📁',l:'All Projects',p:'hodProjects'},
+  ],
+  engineer:[
+    {i:'📋',l:'Dashboard',p:'engDash'},
+    {i:'⚠️',l:'Overdue Alerts',p:'engAlerts'},
+  ]
+};
 
-function bootApp() {
-  const r = currentUser.role;
-  document.getElementById('topbarRole').textContent = r === 'admin' ? 'PROJECT ADMIN' : r === 'dept' ? currentUser.dept.toUpperCase() : r === 'hod' ? 'HOD' : 'ENGINEER';
-  document.getElementById('topbarUser').textContent = r === 'dept' ? `— ${DEPTS.find(d=>d.toLowerCase()===currentUser.dept)}` : '';
+function bootApp(){
+  const r = CU.role;
+  const roleLabels = {admin:'PROJECT ADMIN',dept:CU.dept?.toUpperCase(),hod:'HOD',engineer:'PROJ. ENGINEER'};
+  document.getElementById('tbRole').textContent = roleLabels[r];
+  document.getElementById('tbRole').className = 'tb-role '+r;
+  document.getElementById('tbUser').textContent = r==='dept'?' — '+CU.dept:'';
+  if(r==='admin'||r==='engineer') document.getElementById('bellBtn').style.display='block';
+  else document.getElementById('bellBtn').style.display='none';
 
-  // Build sidebar
-  const nav = {
-    admin: [
-      { icon:'📋', label:'Dashboard', page:'adminDashboard' },
-      { icon:'📁', label:'All Projects', page:'adminProjects' },
-      { icon:'➕', label:'New Project', page:'adminNewProject' },
-    ],
-    dept: [
-      { icon:'📋', label:'My Dashboard', page:'deptDashboard' },
-      { icon:'✏️', label:'Update Work', page:'deptUpdate' },
-    ],
-    hod: [
-      { icon:'📊', label:'Overview', page:'hodOverview' },
-      { icon:'📁', label:'All Projects', page:'hodProjects' },
-    ],
-    engineer: [
-      { icon:'📋', label:'Dashboard', page:'engDashboard' },
-      { icon:'⚠️', label:'Overdue Alerts', page:'engAlerts' },
-    ]
-  };
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = `<div class="nav-sec">Navigation</div>`+
+    NAV[r].map(n=>`<div class="nav-item" id="nav-${n.p}" onclick="showPage('${n.p}')"><span class="ni">${n.i}</span>${n.l}</div>`).join('');
 
-  const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = `<div class="nav-section">Navigation</div>` +
-    nav[r].map(n => `<div class="nav-item" id="nav-${n.page}" onclick="showPage('${n.page}')">
-      <span class="nav-icon">${n.icon}</span>${n.label}
-    </div>`).join('');
-
-  // Show alert bell for engineer
-  if (r === 'engineer' || r === 'admin') {
-    document.getElementById('alertBell').style.display = 'block';
-  }
-
-  showPage(nav[r][0].page);
-  updateAlerts();
+  showPage(NAV[r][0].p);
+  refreshAlerts();
 }
 
-function showPage(page) {
-  currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const navEl = document.getElementById('nav-'+page);
-  if (navEl) navEl.classList.add('active');
-  const main = document.getElementById('mainArea');
-  main.innerHTML = '';
-  pages[page](main);
+let curPage = null;
+function showPage(p){
+  curPage = p;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
+  const el = document.getElementById('nav-'+p);
+  if(el) el.classList.add('on');
+  const m = document.getElementById('mainArea');
+  m.innerHTML='';
+  PAGES[p](m);
 }
 
-// ════════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  HELPERS
-// ════════════════════════════════════════
-function today() { return new Date().toISOString().split('T')[0]; }
-function fmtDate(d) { if(!d)return '—'; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
-function isOverdue(deadline) { if(!deadline)return false; return today() > deadline; }
-function daysLeft(deadline) { if(!deadline)return null; const diff=Math.ceil((new Date(deadline)-new Date(today()))/(1000*86400)); return diff; }
+// ═══════════════════════════════════════════════
+function today(){ return new Date().toISOString().split('T')[0]; }
+function fmtD(d){ if(!d||d==='TBC'||d==='HOLD') return d||'—'; try{ const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}); }catch(e){ return d; } }
+function isOver(d){ if(!d||d==='TBC'||d==='HOLD') return false; return today()>d; }
+function dLeft(d){ if(!d||d==='TBC') return null; return Math.ceil((new Date(d)-new Date(today()))/(86400000)); }
+function excelDate(v){ if(!v) return null; if(v instanceof Date) return v.toISOString().split('T')[0]; if(typeof v==='number'&&v>40000){ const d=new Date(Math.round((v-25569)*86400000)); return d.toISOString().split('T')[0]; } if(typeof v==='string'&&v.match(/^\d{4}-\d{2}-\d{2}/)) return v.split('T')[0]; if(typeof v==='string'&&v.match(/^\d{2}\/\d{2}\/\d{4}/)){const p=v.split('/');return `${p[2]}-${p[1]}-${p[0]}`;} return null; }
+function makeId(){ return 'P-'+Date.now().toString().slice(-6); }
 
-function projectStatus(proj) {
-  let anyOverdue = false;
-  let allDone = true;
-  for (const dept of DEPTS) {
-    const steps = proj.deptSteps[dept] || [];
-    for (const s of steps) {
-      if (s.status !== 'done') allDone = false;
-      if (s.status !== 'done' && isOverdue(s.deadline)) anyOverdue = true;
+function projStatus(proj){
+  let anyOver=false, allDone=true;
+  for(const d of DEPTS){
+    for(const s of (proj.steps[d]||[])){
+      if(s.status!=='done'&&s.status!=='closed') allDone=false;
+      if(s.status!=='done'&&s.status!=='closed'&&isOver(s.currentDeadline)) anyOver=true;
     }
   }
-  if (allDone) return 'completed';
-  if (anyOverdue) return 'delayed';
+  if(allDone) return 'completed';
+  if(anyOver) return 'delayed';
   return 'ontrack';
 }
 
-function projectProgress(proj) {
-  let total = 0, done = 0;
-  for (const dept of DEPTS) {
-    const steps = proj.deptSteps[dept] || [];
-    total += steps.length;
-    done += steps.filter(s=>s.status==='done').length;
-  }
-  return total ? Math.round((done/total)*100) : 0;
+function projProgress(proj){
+  let tot=0,done=0;
+  for(const d of DEPTS){ const ss=proj.steps[d]||[]; tot+=ss.length; done+=ss.filter(s=>s.status==='done'||s.status==='closed').length; }
+  return tot?Math.round((done/tot)*100):0;
 }
 
-function deptProgress(proj, dept) {
-  const steps = proj.deptSteps[dept] || [];
-  if (!steps.length) return 0;
-  return Math.round((steps.filter(s=>s.status==='done').length / steps.length)*100);
+function deptProgress(proj,dept){
+  const ss=proj.steps[dept]||[];
+  if(!ss.length) return 0;
+  return Math.round((ss.filter(s=>s.status==='done'||s.status==='closed').length/ss.length)*100);
 }
 
-function getOverdueItems() {
-  const items = [];
-  for (const proj of DB.projects) {
-    for (const dept of DEPTS) {
-      const steps = proj.deptSteps[dept] || [];
-      for (const s of steps) {
-        if (s.status !== 'done' && isOverdue(s.deadline)) {
-          items.push({ proj, dept, step: s });
+function getOverdue(){
+  const items=[];
+  for(const proj of DB.projects){
+    for(const d of DEPTS){
+      for(const s of (proj.steps[d]||[])){
+        if(s.status!=='done'&&s.status!=='closed'&&isOver(s.currentDeadline)){
+          items.push({proj,dept:d,step:s});
         }
       }
     }
@@ -792,597 +533,1062 @@ function getOverdueItems() {
   return items;
 }
 
-function updateAlerts() {
-  const items = getOverdueItems();
-  const count = items.length;
-  const countEl = document.getElementById('alertCount');
-  const bell = document.getElementById('alertBell');
-  if (!bell) return;
-  if (count > 0) {
-    countEl.style.display = 'flex';
-    countEl.textContent = count;
-  } else {
-    countEl.style.display = 'none';
-  }
-  // Populate panel
+function refreshAlerts(){
+  const items = getOverdue();
+  const ct = items.length;
+  const ctEl = document.getElementById('bellCt');
+  if(ctEl){ ctEl.style.display=ct?'flex':'none'; ctEl.textContent=ct; }
   const list = document.getElementById('alertList');
-  if (list) {
-    list.innerHTML = items.length ? items.map(i => `
-      <div class="alert-item">
-        <div class="alert-proj">${i.proj.name} — ${i.dept}</div>
-        <div class="alert-msg">Step: ${i.step.name}</div>
-        <div class="alert-time">Deadline: ${fmtDate(i.step.deadline)} • ${Math.abs(daysLeft(i.step.deadline))}d overdue</div>
-      </div>
-    `).join('') : '<div style="color:var(--muted);font-size:13px;">No overdue items 🎉</div>';
+  if(list){
+    list.innerHTML = items.length
+      ? items.map(i=>`<div class="al-item">
+          <div class="al-proj">${i.proj.name} — ${i.dept}</div>
+          <div class="al-msg">${i.step.name}</div>
+          <div class="al-days">Due: ${fmtD(i.step.currentDeadline)} • ${Math.abs(dLeft(i.step.currentDeadline))}d overdue</div>
+        </div>`).join('')
+      : '<div style="color:var(--muted);font-size:13px">No overdue items ✓</div>';
   }
 }
 
-function toggleAlertPanel() {
-  document.getElementById('alertPanel').classList.toggle('open');
+function toggleAlert(){ document.getElementById('alertPanel').classList.toggle('on'); }
+
+function openModal(html){ document.getElementById('modalBox').innerHTML=html; document.getElementById('modalOv').classList.add('on'); }
+function closeModal(){ document.getElementById('modalOv').classList.remove('on'); }
+
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast on '+(type==='ok'?'ok':type==='err'?'err':'');
+  setTimeout(()=>t.className='toast',3000);
 }
 
-function showToast(msg, type='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show ' + type;
-  setTimeout(()=>{ t.className='toast'; }, 3000);
-}
+// ═══════════════════════════════════════════════
+//  DELAY CASCADE ENGINE
+// ═══════════════════════════════════════════════
+function cascadeDelays(proj, triggerDept, triggerStepIdx){
+  // Find all steps that come after the delayed step across all depts
+  // We sort steps by their currentDeadline and shift any step whose deadline is >= trigger step deadline
+  const triggerStep = proj.steps[triggerDept][triggerStepIdx];
+  if(!triggerStep.currentDeadline || triggerStep.currentDeadline==='TBC') return [];
 
-function openModal(html) {
-  document.getElementById('modalContent').innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('open');
-}
+  const daysMissed = -dLeft(triggerStep.currentDeadline);
+  if(daysMissed<=0) return [];
 
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
-}
+  const affected = [];
+  let foundTrigger = false;
 
-function makeProjectId() {
-  return 'PROJ-' + String(DB.nextProjectId).padStart(4,'0');
-}
-
-// ════════════════════════════════════════
-//  DEFAULT STEPS PER DEPT
-// ════════════════════════════════════════
-function defaultSteps(dept) {
-  const map = {
-    Marketing: ['Customer Inquiry','Requirement Analysis','Proposal Submission','Order Confirmation'],
-    Engineering: ['Design Draft','Drawing Review','BOM Preparation','Design Approval'],
-    Purchase: ['Vendor Selection','Purchase Order','Material Procurement','Delivery Verification'],
-    QAC: ['Incoming Inspection','In-Process Inspection','Final Inspection','Quality Sign-off'],
-    Welding: ['Fitment','Tack Welding','Full Welding','Post-Weld Inspection'],
-    Production: ['Production Planning','Raw Material Issuance','Manufacturing','Assembly'],
-    Logistics: ['Dispatch Planning','Packaging','Loading','Delivery'],
-    Finance: ['Proforma Invoice','Payment Follow-up','Final Invoice','Closure']
-  };
-  return (map[dept] || ['Step 1','Step 2','Step 3']).map((n,i)=>({id:i, name:n, status:'pending', deadline:null, note:''}));
-}
-
-function initProjectDeptSteps(proj) {
-  const steps = {};
-  for (const d of DEPTS) {
-    steps[d] = defaultSteps(d);
+  // Walk through DEPTS in order, within each dept walk steps in order
+  for(const d of DEPTS){
+    for(let i=0;i<(proj.steps[d]||[]).length;i++){
+      if(d===triggerDept && i===triggerStepIdx){ foundTrigger=true; continue; }
+      if(!foundTrigger) continue;
+      const s = proj.steps[d][i];
+      if(s.status==='done'||s.status==='closed') continue;
+      if(!s.currentDeadline||s.currentDeadline==='TBC') continue;
+      const newDate = shiftDate(s.currentDeadline, daysMissed);
+      affected.push({dept:d,idx:i,step:s,oldDate:s.currentDeadline,newDate,days:daysMissed});
+    }
   }
-  proj.deptSteps = steps;
+  return affected;
 }
 
-// ════════════════════════════════════════
-//  PAGES
-// ════════════════════════════════════════
-const pages = {};
+function shiftDate(dateStr, days){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().split('T')[0];
+}
 
-// ─── ADMIN DASHBOARD ───
-pages.adminDashboard = function(el) {
-  const projects = DB.projects;
-  const total = projects.length;
-  const ontrack = projects.filter(p=>projectStatus(p)==='ontrack').length;
-  const delayed = projects.filter(p=>projectStatus(p)==='delayed').length;
-  const completed = projects.filter(p=>projectStatus(p)==='completed').length;
-  const overdueCount = getOverdueItems().length;
+function applyCascade(proj, affected){
+  for(const a of affected){
+    const s = proj.steps[a.dept][a.idx];
+    if(!s.history) s.history=[];
+    s.history.push({date:s.currentDeadline,reason:'Auto-cascade: upstream delay',ts:today()});
+    s.currentDeadline = a.newDate;
+    proj.delayed = true;
+  }
+  saveDB(DB);
+}
 
-  el.innerHTML = `
-    <div class="page-title">Dashboard</div>
-    <div class="page-sub">Welcome back, Project Admin. Here's your overview.</div>
+function promptCascade(proj, triggerDept, triggerStepIdx, cb){
+  const affected = cascadeDelays(proj, triggerDept, triggerStepIdx);
+  if(!affected.length){ cb(false); return; }
 
-    ${overdueCount ? `<div class="delay-banner">⚠️ <strong>${overdueCount} overdue task${overdueCount>1?'s':''}</strong> across projects require attention.</div>` : ''}
-
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Total Projects</div>
-        <div class="stat-value">${total}</div>
-        <div class="stat-sub">All time</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">On Track</div>
-        <div class="stat-value" style="color:var(--success)">${ontrack}</div>
-        <div class="stat-sub">No delays</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Delayed</div>
-        <div class="stat-value" style="color:var(--danger)">${delayed}</div>
-        <div class="stat-sub">Past deadline</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Completed</div>
-        <div class="stat-value" style="color:var(--accent)">${completed}</div>
-        <div class="stat-sub">Fully done</div>
-      </div>
+  const trigger = proj.steps[triggerDept][triggerStepIdx];
+  const html = `
+    <div class="modal-title">⚡ Delay Cascade Detected</div>
+    <div class="modal-sub">${proj.name} — ${triggerDept}</div>
+    <div class="cascade-banner">
+      <h4>⚠ "${trigger.name}" is overdue by ${Math.abs(dLeft(trigger.currentDeadline))} days</h4>
+      <div style="font-size:13px;color:var(--muted)">The following ${affected.length} downstream step(s) will be auto-shifted:</div>
     </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Dept</th><th>Step</th><th>Old Date</th><th>New Date</th><th>Shift</th></tr></thead>
+        <tbody>
+          ${affected.map(a=>`<tr>
+            <td><span class="badge b-muted">${a.dept}</span></td>
+            <td>${a.step.name}</td>
+            <td><span style="font-family:var(--fm);font-size:11px;color:var(--muted)">${fmtD(a.oldDate)}</span></td>
+            <td><span style="font-family:var(--fm);font-size:11px;color:var(--warn)">${fmtD(a.newDate)}</span></td>
+            <td><span class="badge b-bad">+${a.days}d</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-out" onclick="document.getElementById('cascadeOv').classList.remove('on');cb_cascade(false)">Cancel</button>
+      <button class="btn btn-warn" onclick="document.getElementById('cascadeOv').classList.remove('on');cb_cascade(true)">Apply Cascade</button>
+    </div>
+  `;
+  document.getElementById('cascadeBox').innerHTML=html;
+  document.getElementById('cascadeOv').classList.add('on');
+  window.cb_cascade = function(yes){
+    window.cb_cascade = null;
+    if(yes) applyCascade(proj, affected);
+    cb(yes);
+  };
+}
 
+// ═══════════════════════════════════════════════
+//  DEFAULT STEPS
+// ═══════════════════════════════════════════════
+function defSteps(dept){
+  const map={
+    Marketing:['Customer Inquiry','Requirement Analysis','Proposal Submission','Order Confirmation'],
+    Engineering:['GA Drg Submission','GA Drg Approval','Fab Drg Submission','Fab Drg Approval','Design Calc Submission','Drg to Shop Floor'],
+    Purchase:['Indent Release','Vendor Selection','Purchase Order','Material Receipt','Material Clearance'],
+    QAC:['Incoming Inspection','ITP Submission','In-Process Inspection','Final Inspection','QA Sign-off'],
+    Welding:['Weld Map to Shop','Fit-up','Tack Welding','Full Welding','Post-Weld NDT'],
+    Production:['Plate Cutting','Shell Fabrication','Machining','Assembly','Hydro Test'],
+    Logistics:['Packing','Dispatch Planning','Loading','Delivery'],
+    Finance:['Proforma Invoice','Payment Follow-up','Final Invoice','Closure']
+  };
+  return (map[dept]||['Step 1','Step 2','Step 3']).map((n,i)=>({
+    id:i, name:n, status:'pending',
+    originalDeadline:null, currentDeadline:null,
+    history:[], note:'', actionBy:'', reqDate:null
+  }));
+}
+
+function initSteps(proj){
+  proj.steps={};
+  for(const d of DEPTS) proj.steps[d]=defSteps(d);
+}
+
+// ═══════════════════════════════════════════════
+//  EXCEL IMPORT ENGINE
+// ═══════════════════════════════════════════════
+let importedWorkbook = null;
+
+function handleImportFile(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      importedWorkbook = XLSX.read(e.target.result,{type:'array',cellDates:true});
+      renderImportSheetChoice();
+    }catch(err){ toast('Could not read Excel file','err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderImportSheetChoice(){
+  const wb = importedWorkbook;
+  const sheets = wb.SheetNames.filter(s=>!['Sheet1','Sheet2','Sheet3'].includes(s));
+  const el = document.getElementById('mainArea');
+
+  el.innerHTML=`
+    <div class="pt">Import Project</div>
+    <div class="ps">Select the sheet to import from</div>
+    <div class="card">
+      <div class="card-title">📄 Available Sheets</div>
+      <div class="sheet-tabs" id="sheetTabs">
+        ${sheets.map(s=>`<div class="stab" onclick="previewSheet('${s}')" id="stab-${s.replace(/[^a-zA-Z0-9]/g,'_')}">${s}</div>`).join('')}
+      </div>
+      <div id="sheetPreview"><div style="color:var(--muted);font-size:13px;padding:20px 0">Click a sheet tab above to preview it.</div></div>
+    </div>
+  `;
+}
+
+function previewSheet(sheetName){
+  const wb = importedWorkbook;
+  const ws = wb.Sheets[sheetName];
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('on'));
+  const tid = 'stab-'+sheetName.replace(/[^a-zA-Z0-9]/g,'_');
+  const tel = document.getElementById(tid);
+  if(tel) tel.classList.add('on');
+
+  // Detect sheet type
+  const type = detectSheetType(sheetName, ws);
+  const preview = document.getElementById('sheetPreview');
+
+  if(type==='SUMMERY'){
+    previewSummery(ws, preview, sheetName);
+  } else if(type==='TRACKING'){
+    previewTracking(ws, preview, sheetName);
+  } else if(type==='INDIVIDUAL'){
+    previewIndividual(ws, preview, sheetName);
+  } else {
+    preview.innerHTML=`<div style="color:var(--muted);padding:20px 0">Sheet format not recognized. Supported: SUMMERY, TRACKING SHEET, or individual project sheets (P-XXXXXX).</div>`;
+  }
+}
+
+function detectSheetType(name, ws){
+  if(name==='SUMMERY') return 'SUMMERY';
+  if(name==='TRACKING SHEET') return 'TRACKING';
+  if(name.match(/^P-\d+/)) return 'INDIVIDUAL';
+  // Try to detect from content
+  const data = XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+  if(data[0] && String(data[0][1]||'').includes('CDD')) return 'SUMMERY';
+  if(data[4] && String(data[4][0]||'').includes('P-')) return 'TRACKING';
+  if(data[0] && String(data[0][0]||'').toLowerCase().includes('task name')) return 'INDIVIDUAL';
+  return 'UNKNOWN';
+}
+
+// ── SUMMERY IMPORT ──
+function previewSummery(ws, container, sheetName){
+  const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
+  // Find header row: row 0 is the header
+  const hdr = raw[0]||[];
+  // Group rows by WO number
+  const projMap = {};
+  for(let i=1;i<raw.length;i++){
+    const row = raw[i];
+    const wo = String(row[0]||'').trim();
+    if(!wo||wo==='WO') continue;
+    if(!projMap[wo]) projMap[wo]={wo,engg:row[1],cdd:excelDate(row[2]),edd:excelDate(row[3]),steps:[]};
+    projMap[wo].steps.push({
+      action:String(row[5]||'').trim(),
+      affects:String(row[6]||'').trim(),
+      dept:String(row[8]||'').trim(),
+      actionBy:String(row[9]||'').trim(),
+      reqDate:excelDate(row[10]),
+      status:String(row[11]||'').trim(),
+      currentCommitment:excelDate(row[12]),
+      c1:excelDate(row[13]),c2:excelDate(row[14]),c3:excelDate(row[15]),
+      c4:excelDate(row[16]),c5:excelDate(row[17]),c6:excelDate(row[18]),
+      remarks:String(row[19]||'').trim()
+    });
+  }
+  const projects = Object.values(projMap).filter(p=>p.steps.some(s=>s.action));
+  container.innerHTML=`
+    <div style="margin-bottom:14px;font-size:13px;color:var(--muted)">Found <strong style="color:var(--text)">${projects.length}</strong> projects in SUMMERY sheet.</div>
+    <div class="tbl-wrap" style="max-height:300px;overflow-y:auto;margin-bottom:16px">
+      <table>
+        <thead><tr><th>Work Order</th><th>Proj Engg</th><th>CDD</th><th>EDD</th><th>Steps</th></tr></thead>
+        <tbody>
+          ${projects.slice(0,30).map(p=>`<tr>
+            <td><strong style="font-family:var(--fm)">${p.wo}</strong></td>
+            <td>${p.engg||'—'}</td>
+            <td><span style="font-family:var(--fm);font-size:11px">${fmtD(p.cdd)}</span></td>
+            <td><span style="font-family:var(--fm);font-size:11px">${fmtD(p.edd)}</span></td>
+            <td><span class="badge b-info">${p.steps.length}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" onclick="importSummery(${JSON.stringify(projects).replace(/"/g,'&quot;')})">Import All ${projects.length} Projects</button>
+      <div style="font-size:12px;color:var(--muted);align-self:center">Or select individual projects:</div>
+      ${projects.slice(0,20).map(p=>`<button class="btn-out btn-sm" onclick='importSingleSummery(${JSON.stringify(p).replace(/'/g,"&#39;")})'>${p.wo}</button>`).join('')}
+    </div>
+  `;
+  window._summeryProjects = projects;
+}
+
+function importSummery(projects){
+  if(typeof projects==='string') projects=JSON.parse(projects.replace(/&quot;/g,'"'));
+  let count=0;
+  for(const p of projects){
+    importSummeryProject(p);
+    count++;
+  }
+  saveDB(DB);
+  toast(`Imported ${count} projects!`,'ok');
+  showPage('adminProjects');
+}
+
+function importSingleSummery(p){
+  if(typeof p==='string') p=JSON.parse(p);
+  importSummeryProject(p);
+  saveDB(DB);
+  toast(`Imported ${p.wo}`,'ok');
+  showPage('adminProjects');
+}
+
+function importSummeryProject(p){
+  const existing = DB.projects.find(pr=>pr.id===p.wo||pr.name===p.wo);
+  const proj = existing || {
+    id:p.wo, name:p.wo, client:'',
+    startDate:today(), endDate:p.edd||p.cdd||null,
+    cdd:p.cdd, edd:p.edd, engg:p.engg,
+    createdAt:today(), delayed:false, importSource:'SUMMERY'
+  };
+  if(!proj.steps) initSteps(proj);
+
+  for(const s of p.steps){
+    if(!s.action) continue;
+    const depts = resolveDept(s.dept);
+    for(const dept of depts){
+      // Build history from C1–C6
+      const history=[];
+      const cDates=[s.c1,s.c2,s.c3,s.c4,s.c5,s.c6].filter(Boolean);
+      for(let i=0;i<cDates.length-1;i++) history.push({date:cDates[i],reason:`Commitment C${i+1}`,ts:cDates[i]||''});
+      const orig = cDates[0]||s.reqDate||null;
+      const current = cDates[cDates.length-1]||s.currentCommitment||s.reqDate||null;
+      proj.steps[dept].push({
+        id:Date.now()+Math.random(),
+        name:s.action,
+        status:normalizeStatus(s.status),
+        originalDeadline:orig,
+        currentDeadline:current,
+        history,
+        note:s.remarks||'',
+        actionBy:s.actionBy||'',
+        reqDate:s.reqDate
+      });
+    }
+  }
+  if(!existing) DB.projects.push(proj);
+}
+
+function resolveDept(deptStr){
+  if(!deptStr) return ['Engineering'];
+  const u = deptStr.toUpperCase().trim();
+  for(const [k,v] of Object.entries(DEPT_MAP)){
+    if(u===k.toUpperCase()) return v;
+  }
+  // Partial match
+  for(const d of DEPTS) if(u.includes(d.toUpperCase())) return [d];
+  return ['Engineering'];
+}
+
+function normalizeStatus(s){
+  if(!s) return 'pending';
+  const u=s.toUpperCase();
+  if(u==='CLOSED') return 'done';
+  if(u==='OPEN') return 'pending';
+  if(u==='HOLD') return 'hold';
+  return 'pending';
+}
+
+// ── TRACKING SHEET IMPORT ──
+function previewTracking(ws, container, sheetName){
+  const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
+  // Row 4 has project IDs (P-XXXXXX), Row 5 has PLANNED/ACT headers, Row 1 col 1 is activities
+  const projRow = raw[4]||[];
+  const projects=[];
+  for(let c=2;c<projRow.length;c+=2){
+    const id=String(projRow[c]||'').trim();
+    if(id.match(/^P-/)) projects.push({id,col:c});
+  }
+  container.innerHTML=`
+    <div style="margin-bottom:14px;font-size:13px;color:var(--muted)">Found <strong style="color:var(--text)">${projects.length}</strong> projects in TRACKING SHEET.</div>
+    <div class="tbl-wrap" style="max-height:200px;overflow-y:auto;margin-bottom:16px">
+      <table><thead><tr><th>Project ID</th><th>Column</th></tr></thead><tbody>
+        ${projects.map(p=>`<tr><td><strong style="font-family:var(--fm)">${p.id}</strong></td><td>${p.col}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" onclick="importTracking()">Import All ${projects.length} Projects</button>
+    </div>
+  `;
+  window._trackingData={raw,projects};
+}
+
+function importTracking(){
+  const {raw,projects}=window._trackingData;
+  let count=0;
+  for(const p of projects){
+    const proj = DB.projects.find(pr=>pr.id===p.id)||{
+      id:p.id,name:p.id,client:'',startDate:today(),endDate:null,
+      cdd:null,edd:null,engg:'',createdAt:today(),delayed:false,importSource:'TRACKING'
+    };
+    if(!proj.steps) initSteps(proj);
+    // Extract activity rows (row 6 onwards)
+    for(let r=6;r<raw.length;r++){
+      const row=raw[r];
+      const act=String(row[1]||'').trim();
+      if(!act||!act.replace(/\s/g,'')) continue;
+      const planned=excelDate(row[p.col]);
+      const actual=excelDate(row[p.col+1]);
+      // Try to map activity to a dept
+      const dept=guessActivityDept(act);
+      if(planned||actual){
+        proj.steps[dept].push({
+          id:Date.now()+Math.random(),
+          name:act, status:actual?'done':'pending',
+          originalDeadline:planned, currentDeadline:planned,
+          history:[], note:'', actionBy:'', reqDate:null
+        });
+      }
+    }
+    if(!DB.projects.find(pr=>pr.id===p.id)) DB.projects.push(proj);
+    count++;
+  }
+  saveDB(DB);
+  toast(`Imported ${count} projects from TRACKING SHEET`,'ok');
+  showPage('adminProjects');
+}
+
+function guessActivityDept(act){
+  const u=act.toUpperCase();
+  if(u.includes('PO RECEIPT')||u.includes('OTM')||u.includes('KICK-OFF')||u.includes('ORDER')) return 'Marketing';
+  if(u.includes('DRG')||u.includes('DRAWING')||u.includes('DESIGN')||u.includes('CALC')||u.includes('INDENT')||u.includes('SUBMISSION')||u.includes('APPROVAL')||u.includes('SHOP')) return 'Engineering';
+  if(u.includes('PLATE')||u.includes('TUBE')||u.includes('FLANGE')||u.includes('FORGING')||u.includes('FITTING')||u.includes('MATERIAL')||u.includes('RECEIPT')||u.includes('PURCHASE')) return 'Purchase';
+  if(u.includes('WELD')||u.includes('FITUP')||u.includes('FIT UP')||u.includes('WELDING')) return 'Welding';
+  if(u.includes('HYDRO')||u.includes('TEST')||u.includes('PNEUMATIC')||u.includes('INSPECTION')||u.includes('NDT')||u.includes('LPT')) return 'QAC';
+  if(u.includes('FABRICAT')||u.includes('ROLLING')||u.includes('CUTTING')||u.includes('MACHIN')||u.includes('ASSEMBLY')||u.includes('BLASTING')||u.includes('PAINTING')||u.includes('PICKLING')) return 'Production';
+  if(u.includes('DISPATCH')||u.includes('PACK')||u.includes('SHIPPING')) return 'Logistics';
+  if(u.includes('INVOICE')||u.includes('PAYMENT')) return 'Finance';
+  return 'Production';
+}
+
+// ── INDIVIDUAL SHEET IMPORT ──
+function previewIndividual(ws, container, sheetName){
+  const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
+  // Row 0: headers — Task Name, Duration, Baseline Start, Baseline Finish, Start, Finish
+  const tasks=[];
+  for(let i=1;i<raw.length;i++){
+    const r=raw[i];
+    const name=String(r[0]||'').trim();
+    if(!name||name==='MANUFACTURING') continue;
+    tasks.push({name,duration:r[1],baseStart:excelDate(r[2]),baseFinish:excelDate(r[3]),start:excelDate(r[4]),finish:excelDate(r[5])});
+  }
+  const projId = sheetName.replace('_ALIPL','').replace('_TBWS','').replace(/_.*$/,'');
+  container.innerHTML=`
+    <div style="margin-bottom:14px;font-size:13px;color:var(--muted)">Project: <strong style="font-family:var(--fm)">${projId}</strong> — <strong>${tasks.length}</strong> manufacturing tasks</div>
+    <div class="tbl-wrap" style="max-height:300px;overflow-y:auto;margin-bottom:16px">
+      <table><thead><tr><th>Task</th><th>Duration</th><th>Baseline Start</th><th>Baseline Finish</th><th>Actual Start</th><th>Actual Finish</th></tr></thead><tbody>
+        ${tasks.map(t=>`<tr>
+          <td>${t.name}</td>
+          <td><span style="font-family:var(--fm);font-size:10px">${t.duration||'—'}</span></td>
+          <td><span style="font-family:var(--fm);font-size:10px">${fmtD(t.baseStart)}</span></td>
+          <td><span style="font-family:var(--fm);font-size:10px">${fmtD(t.baseFinish)}</span></td>
+          <td><span style="font-family:var(--fm);font-size:10px;color:${t.start&&t.start>t.baseStart?'var(--warn)':'inherit'}">${fmtD(t.start)}</span></td>
+          <td><span style="font-family:var(--fm);font-size:10px">${fmtD(t.finish)}</span></td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>
+    <button class="btn" onclick="importIndividual('${projId}')">Import ${projId}</button>
+  `;
+  window._individualData={projId,tasks,sheetName};
+}
+
+function importIndividual(projId){
+  const {tasks,sheetName}=window._individualData;
+  const existing=DB.projects.find(p=>p.id===projId);
+  const proj=existing||{
+    id:projId,name:projId,client:'',startDate:today(),
+    endDate:null,cdd:null,edd:null,engg:'',
+    createdAt:today(),delayed:false,importSource:'INDIVIDUAL'
+  };
+  if(!proj.steps) initSteps(proj);
+  // All tasks go to Production by default (manufacturing sheet), but we classify
+  for(const t of tasks){
+    const dept=guessActivityDept(t.name);
+    const hist=[];
+    if(t.baseStart&&t.start&&t.start>t.baseStart){
+      hist.push({date:t.baseStart,reason:'Baseline',ts:t.baseStart});
+    }
+    proj.steps[dept].push({
+      id:Date.now()+Math.random(),
+      name:t.name,
+      status:t.finish?'done':'pending',
+      originalDeadline:t.baseFinish,
+      currentDeadline:t.finish||t.baseFinish,
+      history:hist,
+      note:t.duration?`Duration: ${t.duration}`:'',
+      actionBy:'',reqDate:null
+    });
+  }
+  if(!existing) DB.projects.push(proj);
+  saveDB(DB);
+  toast(`Imported ${projId}`,'ok');
+  showPage('adminProjects');
+}
+
+// ═══════════════════════════════════════════════
+//  PAGES
+// ═══════════════════════════════════════════════
+const PAGES = {};
+
+// ── ADMIN DASHBOARD ──
+PAGES.adminDash = function(el){
+  const total=DB.projects.length;
+  const delayed=DB.projects.filter(p=>projStatus(p)==='delayed').length;
+  const completed=DB.projects.filter(p=>projStatus(p)==='completed').length;
+  const overdue=getOverdue().length;
+  el.innerHTML=`
+    <div class="pt">Dashboard</div>
+    <div class="ps">Project Admin overview — all projects at a glance</div>
+    ${overdue?`<div class="delay-banner">⚠ <strong>${overdue} overdue task(s)</strong> across projects require immediate attention.</div>`:''}
+    <div class="stats-row">
+      <div class="stat"><div class="stat-lbl">Total Projects</div><div class="stat-val">${total}</div></div>
+      <div class="stat"><div class="stat-lbl">On Track</div><div class="stat-val" style="color:var(--success)">${total-delayed-completed}</div></div>
+      <div class="stat"><div class="stat-lbl">Delayed</div><div class="stat-val" style="color:var(--danger)">${delayed}</div></div>
+      <div class="stat"><div class="stat-lbl">Completed</div><div class="stat-val" style="color:var(--accent)">${completed}</div></div>
+    </div>
     <div class="card">
       <div class="card-title">📁 Recent Projects</div>
-      ${projects.length === 0 ? `<div class="empty-state"><div class="empty-icon">📭</div><p>No projects yet. Create your first project!</p></div>` :
-      `<div class="table-wrap"><table>
-        <thead><tr>
-          <th>Project ID</th><th>Name</th><th>Client</th><th>Progress</th><th>Status</th><th>Action</th>
-        </tr></thead>
+      ${!total?`<div class="empty"><div class="ei">📭</div><p>No projects yet. <a href="#" onclick="showPage('adminImport')" style="color:var(--accent)">Import from Excel →</a></p></div>`:`
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>ID</th><th>Project</th><th>Client</th><th>CDD</th><th>Progress</th><th>Status</th><th></th></tr></thead>
         <tbody>
-        ${projects.slice(-6).reverse().map(p => {
-          const pct = projectProgress(p);
-          const st = projectStatus(p);
-          return `<tr>
-            <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--muted)">${p.id}</span></td>
-            <td><strong>${p.name}</strong></td>
-            <td>${p.client||'—'}</td>
-            <td>
-              <div class="progress-bar" style="width:120px"><div class="progress-fill" style="width:${pct}%"></div></div>
-              <div style="font-size:11px;color:var(--muted);margin-top:3px">${pct}%</div>
-            </td>
-            <td><span class="badge ${st==='delayed'?'badge-danger':st==='completed'?'badge-success':'badge-info'}">${st}</span></td>
-            <td><button class="btn btn-sm btn-outline" onclick="adminOpenProject('${p.id}')">View</button></td>
-          </tr>`;
-        }).join('')}
+          ${DB.projects.slice(-8).reverse().map(p=>{
+            const pct=projProgress(p); const st=projStatus(p);
+            return `<tr>
+              <td><span style="font-family:var(--fm);font-size:11px;color:var(--muted)">${p.id}</span></td>
+              <td><strong>${p.name}</strong></td>
+              <td>${p.client||'—'}</td>
+              <td><span style="font-family:var(--fm);font-size:11px">${fmtD(p.cdd||p.endDate)}</span></td>
+              <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${pct}%;background:${pct===100?'var(--success)':st==='delayed'?'var(--danger)':'var(--accent)'}"></div></div><div class="pbar-pct">${pct}%</div></div></td>
+              <td><span class="badge ${st==='delayed'?'b-bad':st==='completed'?'b-ok':'b-info'}">${st}</span></td>
+              <td><button class="btn btn-sm" onclick="openProject('${p.id}')">View</button></td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table></div>`}
     </div>
   `;
 };
 
-// ─── ADMIN ALL PROJECTS ───
-pages.adminProjects = function(el) {
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-      <div>
-        <div class="page-title">All Projects</div>
-        <div class="page-sub">Manage and monitor all manufacturing projects</div>
+// ── ADMIN ALL PROJECTS ──
+PAGES.adminProjects = function(el){
+  el.innerHTML=`
+    <div class="sec-hd">
+      <div><div class="pt">All Projects</div><div class="ps">Complete project portfolio</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-out" onclick="showPage('adminImport')">📤 Import Excel</button>
+        <button class="btn" onclick="showPage('adminNew')">+ New Project</button>
       </div>
-      <button class="btn" onclick="showPage('adminNewProject')">+ New Project</button>
     </div>
-    <div id="projectsGrid"></div>
+    <div id="pgrid"></div>
   `;
-  renderProjectsGrid();
+  renderGrid();
 };
 
-function renderProjectsGrid() {
-  const grid = document.getElementById('projectsGrid');
-  if (!grid) return;
-  if (!DB.projects.length) {
-    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No projects yet. <a href="#" onclick="showPage('adminNewProject')" style="color:var(--accent)">Create one →</a></p></div>`;
+function renderGrid(){
+  const g=document.getElementById('pgrid');
+  if(!g)return;
+  if(!DB.projects.length){
+    g.innerHTML=`<div class="empty"><div class="ei">📭</div><p>No projects. <a href="#" onclick="showPage('adminImport')" style="color:var(--accent)">Import from Excel →</a></p></div>`;
     return;
   }
-  grid.innerHTML = `<div class="projects-grid">${DB.projects.map(p => {
-    const pct = projectProgress(p);
-    const st = projectStatus(p);
-    const cls = st === 'delayed' ? 'overdue-flash' : '';
-    return `<div class="project-card ${st==='delayed'?'delayed':''} ${cls}" onclick="adminOpenProject('${p.id}')">
-      <div class="project-card-header">
-        <div>
-          <div class="project-name">${p.name}</div>
-          <div class="project-id">${p.id}</div>
-        </div>
-        <span class="badge ${st==='delayed'?'badge-danger':st==='completed'?'badge-success':'badge-info'}">${st}</span>
+  g.innerHTML=`<div class="proj-grid">${DB.projects.map(p=>{
+    const pct=projProgress(p);const st=projStatus(p);
+    return `<div class="proj-card ${st==='delayed'?'delayed overdue-flash':''}" onclick="openProject('${p.id}')">
+      <div class="pc-hd">
+        <div><div class="pc-name">${p.name}</div><div class="pc-id">${p.id}${p.importSource?' · '+p.importSource:''}</div></div>
+        <span class="badge ${st==='delayed'?'b-bad':st==='completed'?'b-ok':'b-info'}">${st}</span>
       </div>
-      <div class="project-meta">
-        <span class="badge badge-muted">👤 ${p.client||'No Client'}</span>
-        ${p.endDate ? `<span class="badge badge-muted">📅 ${fmtDate(p.endDate)}</span>` : ''}
+      <div class="pc-meta">
+        ${p.client?`<span class="badge b-muted">👤 ${p.client}</span>`:''}
+        ${p.cdd?`<span class="badge b-muted">📅 CDD: ${fmtD(p.cdd)}</span>`:''}
+        ${p.edd?`<span class="badge b-muted">🚚 EDD: ${fmtD(p.edd)}</span>`:''}
+        ${p.engg?`<span class="badge b-muted">👷 ${p.engg}</span>`:''}
       </div>
-      <div class="project-progress">
-        <div class="progress-label"><span>Overall Progress</span><span>${pct}%</span></div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-      </div>
+      <div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${pct}%;background:${pct===100?'var(--success)':st==='delayed'?'var(--danger)':'var(--accent)'}"></div></div><div class="pbar-pct">${pct}%</div></div>
     </div>`;
   }).join('')}</div>`;
 }
 
-// ─── ADMIN NEW PROJECT ───
-pages.adminNewProject = function(el) {
-  el.innerHTML = `
-    <div class="page-title">Create New Project</div>
-    <div class="page-sub">Onboard a new manufacturing project</div>
+// ── ADMIN IMPORT ──
+PAGES.adminImport = function(el){
+  el.innerHTML=`
+    <div class="pt">Import Project</div>
+    <div class="ps">Upload your master tracking Excel file (XLSX or CSV)</div>
     <div class="card" style="max-width:600px">
+      <div class="import-zone" id="importZone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="event.preventDefault();this.classList.remove('drag');handleImportFile(event.dataTransfer.files[0])">
+        <div class="iz-icon">📊</div>
+        <h3>Drop Excel File Here</h3>
+        <p style="margin-top:6px">Supports XLSX — SUMMERY, TRACKING SHEET, or individual project sheets</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(this.files[0])">
+        <button class="btn" style="margin-top:16px" onclick="event.stopPropagation();document.getElementById('fileInput').click()">Browse File</button>
+      </div>
+    </div>
+    <div id="mainArea2"></div>
+  `;
+  // Override mainArea reference for sheet selection
+  window._importTarget = el;
+};
+
+// Override renderImportSheetChoice to use the full mainArea
+const _orig = renderImportSheetChoice;
+renderImportSheetChoice = function(){
+  const wb = importedWorkbook;
+  const sheets = wb.SheetNames.filter(s=>!['Sheet1','Sheet2','Sheet3','AI Activities','PRODUCTION DAILY MOM','JSU'].includes(s));
+  const el = document.getElementById('mainArea');
+  el.innerHTML=`
+    <div class="pt">Import Project</div>
+    <div class="ps">Select a sheet to preview and import</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <button class="btn-out btn-sm" onclick="showPage('adminImport')">← Back</button>
+      <span style="font-size:12px;color:var(--muted)">Sheets found:</span>
+    </div>
+    <div class="sheet-tabs" id="sheetTabs">${sheets.map(s=>`<div class="stab" onclick="previewSheet('${s}')" id="stab-${s.replace(/[^a-zA-Z0-9]/g,'_')}">${s}</div>`).join('')}</div>
+    <div class="card" id="sheetPreview"><div style="color:var(--muted);font-size:13px;padding:20px 0">Click a sheet tab above to preview it.</div></div>
+  `;
+};
+
+// ── ADMIN NEW PROJECT ──
+PAGES.adminNew = function(el){
+  el.innerHTML=`
+    <div class="pt">New Project</div>
+    <div class="ps">Manually onboard a project</div>
+    <div class="card" style="max-width:580px">
       <div class="form-row">
-        <div class="form-group">
-          <label>Project Name *</label>
-          <input type="text" id="np-name" placeholder="e.g. Boiler Assembly Unit">
-        </div>
-        <div class="form-group">
-          <label>Client Name</label>
-          <input type="text" id="np-client" placeholder="e.g. ABC Industries">
-        </div>
+        <div class="fg"><label>Project ID / WO *</label><input id="np-id" placeholder="e.g. P-232001"></div>
+        <div class="fg"><label>Project Name</label><input id="np-name" placeholder="e.g. Boiler Unit"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Start Date</label>
-          <input type="date" id="np-start">
-        </div>
-        <div class="form-group">
-          <label>Expected End Date</label>
-          <input type="date" id="np-end">
-        </div>
+        <div class="fg"><label>Client</label><input id="np-client" placeholder="Client / Company"></div>
+        <div class="fg"><label>Project Engineer</label><input id="np-engg" placeholder="e.g. JSU"></div>
       </div>
-      <div class="form-group">
-        <label>Project Description</label>
-        <textarea id="np-desc" placeholder="Brief description of the project scope..."></textarea>
+      <div class="form-row">
+        <div class="fg"><label>Customer Due Date (CDD)</label><input type="date" id="np-cdd"></div>
+        <div class="fg"><label>Expected Dispatch Date (EDD)</label><input type="date" id="np-edd"></div>
       </div>
-      <div class="form-group">
-        <label>Project Value (₹)</label>
-        <input type="number" id="np-value" placeholder="e.g. 5000000">
-      </div>
-      <div style="margin-top:8px">
+      <div class="fg"><label>Description</label><textarea id="np-desc" placeholder="Brief project scope..."></textarea></div>
+      <div style="display:flex;gap:10px;margin-top:6px">
         <button class="btn" onclick="createProject()">Create Project →</button>
-        <button class="btn-outline" style="margin-left:10px" onclick="showPage('adminProjects')">Cancel</button>
+        <button class="btn-out" onclick="showPage('adminProjects')">Cancel</button>
       </div>
     </div>
   `;
-  document.getElementById('np-start').value = today();
 };
 
-function createProject() {
-  const name = document.getElementById('np-name').value.trim();
-  if (!name) { showToast('Project name is required','error'); return; }
-  const proj = {
-    id: makeProjectId(),
-    name,
-    client: document.getElementById('np-client').value.trim(),
-    startDate: document.getElementById('np-start').value,
-    endDate: document.getElementById('np-end').value,
-    desc: document.getElementById('np-desc').value.trim(),
-    value: document.getElementById('np-value').value,
-    createdAt: today(),
-    delayed: false
+function createProject(){
+  const id=document.getElementById('np-id').value.trim();
+  const name=document.getElementById('np-name').value.trim();
+  if(!id){toast('Project ID is required','err');return;}
+  if(DB.projects.find(p=>p.id===id)){toast('Project ID already exists','err');return;}
+  const proj={
+    id,name:name||id,
+    client:document.getElementById('np-client').value.trim(),
+    engg:document.getElementById('np-engg').value.trim(),
+    cdd:document.getElementById('np-cdd').value||null,
+    edd:document.getElementById('np-edd').value||null,
+    endDate:document.getElementById('np-edd').value||null,
+    startDate:today(),createdAt:today(),delayed:false
   };
-  initProjectDeptSteps(proj);
+  initSteps(proj);
   DB.projects.push(proj);
-  DB.nextProjectId++;
-  saveData(DB);
-  showToast('Project ' + proj.id + ' created!', 'success');
-  showPage('adminProjects');
+  saveDB(DB);
+  toast('Project created!','ok');
+  openProject(proj.id);
 }
 
-// ─── ADMIN: OPEN PROJECT DETAIL ───
-function adminOpenProject(projId) {
-  const proj = DB.projects.find(p=>p.id===projId);
-  if (!proj) return;
-  const main = document.getElementById('mainArea');
-  main.innerHTML = '';
+// ── OPEN PROJECT (ADMIN) ──
+function openProject(projId){
+  const proj=DB.projects.find(p=>p.id===projId);
+  if(!proj)return;
+  const el=document.getElementById('mainArea');
+  el.innerHTML='';
+  const pct=projProgress(proj);
+  const st=projStatus(proj);
+  const overdueItems=getOverdue().filter(i=>i.proj.id===projId);
 
-  const pct = projectProgress(proj);
-  const st = projectStatus(proj);
-  const overdueItems = getOverdueItems().filter(i=>i.proj.id===projId);
-
-  main.innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
-      <button class="btn-outline btn-sm" onclick="showPage('adminProjects')">← Back</button>
-      <div class="page-title">${proj.name}</div>
-      <span class="badge ${st==='delayed'?'badge-danger':st==='completed'?'badge-success':'badge-info'}">${st}</span>
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn-out btn-sm" onclick="showPage('adminProjects')">← Back</button>
+      <div class="pt">${proj.name}</div>
+      <span class="badge ${st==='delayed'?'b-bad':st==='completed'?'b-ok':'b-info'}">${st}</span>
     </div>
-    <div class="page-sub">${proj.id} • Client: ${proj.client||'—'} • Value: ${proj.value?'₹'+Number(proj.value).toLocaleString('en-IN'):'—'}</div>
-
-    ${overdueItems.length ? `<div class="delay-banner">⚠️ ${overdueItems.length} overdue step(s) — project is <strong>DELAYED</strong>.</div>` : ''}
-
-    <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;margin-bottom:20px">
+    <div class="ps">${proj.id} • ${proj.client||'No client'} • ${proj.engg?'Engg: '+proj.engg:''} • CDD: ${fmtD(proj.cdd)} • EDD: ${fmtD(proj.edd)}</div>
+    ${overdueItems.length?`<div class="delay-banner">⚠ ${overdueItems.length} overdue step(s) — project is <strong>DELAYED</strong>. Cascade will apply.</div>`:''}
+    <div class="two-col" style="margin-bottom:16px">
       <div class="card">
-        <div class="card-title">📊 Overall Progress</div>
-        <div class="progress-label" style="margin-bottom:8px"><span>Completion</span><strong>${pct}%</strong></div>
-        <div class="progress-bar" style="height:10px"><div class="progress-fill" style="width:${pct}%"></div></div>
-        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div><div style="font-size:11px;color:var(--muted)">Start Date</div><div style="font-family:var(--font-mono);font-size:13px;margin-top:2px">${fmtDate(proj.startDate)}</div></div>
-          <div><div style="font-size:11px;color:var(--muted)">End Date</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
-              <input class="inline-input" type="date" id="proj-end-edit" value="${proj.endDate||''}" onchange="updateProjectDate('${proj.id}','endDate',this.value)" style="padding:2px 6px;font-size:12px">
-            </div>
-          </div>
+        <div class="card-title">📊 Progress</div>
+        <div class="pbar-wrap" style="margin-bottom:16px"><div class="pbar" style="height:8px"><div class="pbar-fill" style="width:${pct}%;background:${pct===100?'var(--success)':st==='delayed'?'var(--danger)':'var(--accent)'}"></div></div><strong style="font-family:var(--fm)">${pct}%</strong></div>
+        <div class="form-row">
+          <div class="fg"><label>CDD</label><input type="date" value="${proj.cdd||''}" onchange="updateProjField('${projId}','cdd',this.value)"></div>
+          <div class="fg"><label>EDD</label><input type="date" value="${proj.edd||''}" onchange="updateProjField('${projId}','edd',this.value)"></div>
+        </div>
+        <div class="fg"><label>Client</label><input value="${proj.client||''}" onchange="updateProjField('${projId}','client',this.value)"></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-sm btn-danger" onclick="deleteProject('${projId}')">🗑 Delete</button>
         </div>
       </div>
       <div class="card">
         <div class="card-title">🏭 Dept Progress</div>
-        ${DEPTS.map(d=>{
-          const dp = deptProgress(proj,d);
-          return `<div style="margin-bottom:8px">
-            <div class="progress-label" style="margin-bottom:3px"><span style="font-size:12px">${d}</span><span style="font-size:11px;font-family:var(--font-mono)">${dp}%</span></div>
-            <div class="progress-bar"><div class="progress-fill" style="width:${dp}%;background:${dp===100?'var(--success)':dp>50?'var(--accent)':'var(--warn)'}"></div></div>
-          </div>`;
-        }).join('')}
+        ${DEPTS.map(d=>{const dp=deptProgress(proj,d);return `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>${d}</span><span style="font-family:var(--fm)">${dp}%</span></div><div class="pbar"><div class="pbar-fill" style="width:${dp}%;background:${dp===100?'var(--success)':dp>50?'var(--accent)':'var(--warn)'}"></div></div></div>`;}).join('')}
       </div>
     </div>
-
     <div class="card">
-      <div class="card-title">📋 Department Steps & Deadlines <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:8px">— Admin can edit deadlines</span></div>
-      <div class="dept-pipeline" id="deptPipeline">
-        ${DEPTS.map(dept => renderDeptRows(proj, dept)).join('')}
+      <div class="card-title">📋 Department Steps <span style="font-size:11px;color:var(--muted);font-weight:400">— Click a step to edit deadline, status, history</span>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="addStepModal('${projId}')">+ Add Step</button>
       </div>
-    </div>
-
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="btn btn-danger btn-sm" onclick="deleteProject('${proj.id}')">🗑 Delete Project</button>
+      <div id="pipelines">
+        ${DEPTS.map(d=>renderPipeline(proj,d,true)).join('')}
+      </div>
     </div>
   `;
 }
 
-function renderDeptRows(proj, dept) {
-  const steps = proj.deptSteps[dept] || [];
-  const hasOverdue = steps.some(s=>s.status!=='done'&&isOverdue(s.deadline));
-  return `<div class="dept-row ${hasOverdue?'overdue-flash':''}">
-    <div class="dept-name">${dept}</div>
-    <div class="dept-steps">
-      ${steps.map((s,i) => {
-        let cls = s.status==='done'?'done':s.status==='inprogress'?'inprogress':(s.status!=='done'&&isOverdue(s.deadline))?'overdue':'';
-        return `<div class="step-chip ${cls}" title="${s.name}${s.deadline?' — due: '+fmtDate(s.deadline):''}${s.note?' — '+s.note:''}" onclick="adminEditStep('${proj.id}','${dept}',${i})">${s.name}</div>`;
-      }).join('')}
-      <button class="step-chip" onclick="adminAddStep('${proj.id}','${dept}')" title="Add step" style="color:var(--accent);border-color:var(--accent);cursor:pointer">+ Add</button>
+function updateProjField(projId,field,val){
+  const proj=DB.projects.find(p=>p.id===projId);
+  if(!proj)return;
+  proj[field]=val;
+  saveDB(DB);
+  toast('Saved','ok');
+}
+
+function deleteProject(projId){
+  if(!confirm('Delete this project? Cannot be undone.'))return;
+  DB.projects=DB.projects.filter(p=>p.id!==projId);
+  saveDB(DB);
+  toast('Deleted');
+  showPage('adminProjects');
+}
+
+function renderPipeline(proj,dept,admin=false){
+  const steps=proj.steps[dept]||[];
+  const hasOver=steps.some(s=>s.status!=='done'&&s.status!=='closed'&&isOver(s.currentDeadline));
+  return `<div class="pipe-row ${hasOver?'overdue-flash':''}">
+    <div class="pipe-name">${dept}</div>
+    <div class="pipe-steps">
+      ${steps.length?steps.map((s,i)=>{
+        const cls=s.status==='done'||s.status==='closed'?'done':s.status==='inprogress'?'inprogress':s.status==='hold'?'hold':(isOver(s.currentDeadline)?'overdue':'');
+        const dl=dLeft(s.currentDeadline);
+        const dlTxt=s.currentDeadline&&dl!==null?(dl<0?`${Math.abs(dl)}d late`:dl===0?'Today':`${dl}d`):'';
+        return `<div class="step-chip ${cls}" title="${s.name} — ${fmtD(s.currentDeadline)}${s.actionBy?' ('+s.actionBy+')':''}" onclick="${admin?`adminEditStep('${proj.id}','${dept}',${i})`:`deptUpdateStep('${proj.id}','${dept}',${i})`}">${s.name}${dlTxt?` <span style="font-size:8px">[${dlTxt}]</span>`:''}`;
+      }).join(''):'<span style="color:var(--muted2);font-size:11px">No steps</span>'}
+      ${admin?`<span class="step-chip" onclick="addStepToDept('${proj.id}','${dept}')" style="color:var(--accent2);border-color:var(--accent2);cursor:pointer">+</span>`:''}
     </div>
-    <div class="dept-deadline">${steps.filter(s=>s.status!=='done').length} pending</div>
+    <div class="pipe-info">${deptProgress(proj,dept)}%</div>
   </div>`;
 }
 
-function adminEditStep(projId, dept, stepIdx) {
-  const proj = DB.projects.find(p=>p.id===projId);
-  const s = proj.deptSteps[dept][stepIdx];
+function adminEditStep(projId,dept,idx){
+  const proj=DB.projects.find(p=>p.id===projId);
+  const s=proj.steps[dept][idx];
+  const shifted=s.originalDeadline&&s.currentDeadline&&s.currentDeadline!==s.originalDeadline;
   openModal(`
     <button class="modal-close" onclick="closeModal()">×</button>
     <div class="modal-title">Edit Step</div>
     <div class="modal-sub">${proj.name} → ${dept}</div>
-    <div class="form-group"><label>Step Name</label><input type="text" id="es-name" value="${s.name}"></div>
+    <div class="fg"><label>Step Name</label><input id="es-name" value="${s.name}"></div>
     <div class="form-row">
-      <div class="form-group"><label>Deadline</label><input type="date" id="es-deadline" value="${s.deadline||''}"></div>
-      <div class="form-group"><label>Status</label>
+      <div class="fg"><label>Original Deadline</label>
+        <input type="date" id="es-orig" value="${s.originalDeadline||''}" onchange="updateOrigDeadline('${projId}','${dept}',${idx},this.value)">
+      </div>
+      <div class="fg"><label>Current Deadline${shifted?' <span style=color:var(--warn)>★ Shifted</span>':''}</label>
+        <input type="date" id="es-curr" value="${s.currentDeadline||''}" style="${shifted?'border-color:var(--warn)':''}">
+      </div>
+    </div>
+    ${s.history&&s.history.length?`
+    <div class="fg"><label>Deadline History</label>
+      <div class="hist-timeline">
+        <div class="hist-item"><div class="hist-dot" style="background:var(--muted)"></div><div class="hist-label" style="color:var(--muted)">ORIG</div><div class="hist-date">${fmtD(s.originalDeadline)}</div></div>
+        ${s.history.map((h,hi)=>`<div class="hist-item"><div class="hist-dot" style="background:var(--warn)"></div><div class="hist-label">C${hi+1}</div><div class="hist-date shifted">${fmtD(h.date)}</div><div style="font-size:10px;color:var(--muted);margin-left:4px">${h.reason||''}</div></div>`).join('')}
+        <div class="hist-item"><div class="hist-dot" style="background:var(--accent)" class="pulse"></div><div class="hist-label" style="color:var(--accent)">NOW</div><div class="hist-date" style="color:var(--accent)">${fmtD(s.currentDeadline)}</div></div>
+      </div>
+    </div>`:''}
+    <div class="form-row">
+      <div class="fg"><label>Status</label>
         <select id="es-status">
           <option value="pending" ${s.status==='pending'?'selected':''}>Pending</option>
           <option value="inprogress" ${s.status==='inprogress'?'selected':''}>In Progress</option>
-          <option value="done" ${s.status==='done'?'selected':''}>Done</option>
+          <option value="done" ${s.status==='done'?'selected':''}>Done / Closed</option>
+          <option value="hold" ${s.status==='hold'?'selected':''}>On Hold</option>
         </select>
       </div>
+      <div class="fg"><label>Action By</label><input id="es-by" value="${s.actionBy||''}"></div>
     </div>
-    <div class="form-group"><label>Note</label><textarea id="es-note">${s.note||''}</textarea></div>
-    <div class="form-actions">
-      <button class="btn-outline" onclick="adminDeleteStep('${projId}','${dept}',${stepIdx})">Delete Step</button>
-      <button class="btn" onclick="adminSaveStep('${projId}','${dept}',${stepIdx})">Save Changes</button>
+    <div class="fg"><label>Note / Remark</label><textarea id="es-note">${s.note||''}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn-out btn-sm btn-danger" onclick="deleteStep('${projId}','${dept}',${idx})">Delete Step</button>
+      <button class="btn-out" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveAdminStep('${projId}','${dept}',${idx})">Save Changes</button>
     </div>
   `);
 }
 
-function adminSaveStep(projId, dept, stepIdx) {
-  const proj = DB.projects.find(p=>p.id===projId);
-  const s = proj.deptSteps[dept][stepIdx];
-  s.name = document.getElementById('es-name').value;
-  s.deadline = document.getElementById('es-deadline').value;
-  s.status = document.getElementById('es-status').value;
-  s.note = document.getElementById('es-note').value;
-  saveData(DB);
-  closeModal();
-  updateAlerts();
-  adminOpenProject(projId);
-  showToast('Step updated!','success');
+function updateOrigDeadline(projId,dept,idx,val){
+  const proj=DB.projects.find(p=>p.id===projId);
+  proj.steps[dept][idx].originalDeadline=val;
+  if(!proj.steps[dept][idx].currentDeadline) proj.steps[dept][idx].currentDeadline=val;
+  saveDB(DB);
 }
 
-function adminDeleteStep(projId, dept, stepIdx) {
-  const proj = DB.projects.find(p=>p.id===projId);
-  proj.deptSteps[dept].splice(stepIdx,1);
-  saveData(DB);
+function saveAdminStep(projId,dept,idx){
+  const proj=DB.projects.find(p=>p.id===projId);
+  const s=proj.steps[dept][idx];
+  const newCurr=document.getElementById('es-curr').value;
+  const oldCurr=s.currentDeadline;
+  s.name=document.getElementById('es-name').value;
+  s.status=document.getElementById('es-status').value;
+  s.actionBy=document.getElementById('es-by').value;
+  s.note=document.getElementById('es-note').value;
+  // If deadline changed, record in history
+  if(newCurr&&newCurr!==oldCurr){
+    if(!s.history) s.history=[];
+    s.history.push({date:oldCurr,reason:'Admin revision',ts:today()});
+    s.currentDeadline=newCurr;
+  }
+  saveDB(DB);
   closeModal();
-  adminOpenProject(projId);
-  showToast('Step deleted');
+  refreshAlerts();
+  // Check cascade
+  if(s.status!=='done'&&isOver(s.currentDeadline)){
+    promptCascade(proj,dept,idx,()=>{ openProject(projId); });
+  } else {
+    openProject(projId);
+  }
+  toast('Step saved!','ok');
 }
 
-function adminAddStep(projId, dept) {
+function deleteStep(projId,dept,idx){
+  if(!confirm('Delete this step?'))return;
+  const proj=DB.projects.find(p=>p.id===projId);
+  proj.steps[dept].splice(idx,1);
+  saveDB(DB);
+  closeModal();
+  openProject(projId);
+  toast('Step deleted');
+}
+
+function addStepModal(projId){
   openModal(`
     <button class="modal-close" onclick="closeModal()">×</button>
     <div class="modal-title">Add Step</div>
-    <div class="modal-sub">${dept} department</div>
-    <div class="form-group"><label>Step Name *</label><input type="text" id="as-name" placeholder="e.g. Final Review"></div>
-    <div class="form-group"><label>Deadline</label><input type="date" id="as-deadline"></div>
-    <div class="form-actions">
-      <button class="btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn" onclick="doAddStep('${projId}','${dept}')">Add Step</button>
+    <div class="fg"><label>Department</label><select id="as-dept">${DEPTS.map(d=>`<option>${d}</option>`).join('')}</select></div>
+    <div class="fg"><label>Step Name *</label><input id="as-name" placeholder="e.g. Final Hydro Test"></div>
+    <div class="form-row">
+      <div class="fg"><label>Original Deadline</label><input type="date" id="as-orig"></div>
+      <div class="fg"><label>Action By</label><input id="as-by" placeholder="e.g. KRT"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-out" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveNewStep('${projId}')">Add Step</button>
     </div>
   `);
 }
 
-function doAddStep(projId, dept) {
-  const name = document.getElementById('as-name').value.trim();
-  if (!name) { showToast('Step name required','error'); return; }
-  const proj = DB.projects.find(p=>p.id===projId);
-  proj.deptSteps[dept].push({ id: Date.now(), name, status:'pending', deadline: document.getElementById('as-deadline').value, note:'' });
-  saveData(DB);
-  closeModal();
-  updateAlerts();
-  adminOpenProject(projId);
-  showToast('Step added!','success');
-}
-
-function updateProjectDate(projId, field, val) {
-  const proj = DB.projects.find(p=>p.id===projId);
-  proj[field] = val;
-  saveData(DB);
-  showToast('Date updated!','success');
-  updateAlerts();
-}
-
-function deleteProject(projId) {
-  if (!confirm('Delete this project? This cannot be undone.')) return;
-  DB.projects = DB.projects.filter(p=>p.id!==projId);
-  saveData(DB);
-  showToast('Project deleted');
-  showPage('adminProjects');
-}
-
-// ─── DEPT DASHBOARD ───
-pages.deptDashboard = function(el) {
-  const dept = DEPTS.find(d=>d.toLowerCase()===currentUser.dept);
-  const myProjects = DB.projects.filter(p=>p.deptSteps[dept]&&p.deptSteps[dept].length);
-  const overdue = getOverdueItems().filter(i=>i.dept===dept);
-
-  el.innerHTML = `
-    <div class="page-title">${dept} Department</div>
-    <div class="page-sub">Your work across all active projects</div>
-
-    ${overdue.length ? `<div class="delay-banner">⚠️ You have ${overdue.length} overdue step(s). Please update immediately.</div>` : ''}
-
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Projects</div>
-        <div class="stat-value">${myProjects.length}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Overdue</div>
-        <div class="stat-value" style="color:var(--danger)">${overdue.length}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Steps Done</div>
-        <div class="stat-value" style="color:var(--success)">${myProjects.reduce((acc,p)=>(p.deptSteps[dept]||[]).filter(s=>s.status==='done').length+acc,0)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Pending</div>
-        <div class="stat-value" style="color:var(--warn)">${myProjects.reduce((acc,p)=>(p.deptSteps[dept]||[]).filter(s=>s.status!=='done').length+acc,0)}</div>
-      </div>
+function addStepToDept(projId,dept){
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title">Add Step — ${dept}</div>
+    <div class="fg"><label>Step Name *</label><input id="as-name" placeholder="e.g. Material Clearance"></div>
+    <div class="form-row">
+      <div class="fg"><label>Original Deadline</label><input type="date" id="as-orig"></div>
+      <div class="fg"><label>Action By</label><input id="as-by"></div>
     </div>
-
-    ${myProjects.length===0?`<div class="empty-state"><div class="empty-icon">📭</div><p>No projects assigned yet.</p></div>`:''}
-
-    ${myProjects.map(p=>{
-      const steps = p.deptSteps[dept]||[];
-      const dp = deptProgress(p,dept);
-      return `<div class="card">
-        <div class="card-title">${p.name} <span style="font-size:12px;color:var(--muted);font-weight:400">${p.id}</span>
-          <span class="badge badge-muted" style="margin-left:auto">${dp}% done</span>
-        </div>
-        <div class="dept-steps">
-          ${steps.map(s=>{
-            const ov=s.status!=='done'&&isOverdue(s.deadline);
-            const cls=s.status==='done'?'done':s.status==='inprogress'?'inprogress':ov?'overdue':'';
-            const dl=daysLeft(s.deadline);
-            return `<div class="step-chip ${cls}" title="${fmtDate(s.deadline)}">${s.name}${s.deadline?` <span style="font-size:9px">(${ov?'⚠ '+Math.abs(dl)+'d late':dl===0?'Today':dl>0?dl+'d':''})</span>`:''}`;
-          }).join('')}
-        </div>
-      </div>`;
-    }).join('')}
-  `;
-};
-
-// ─── DEPT UPDATE ───
-pages.deptUpdate = function(el) {
-  const dept = DEPTS.find(d=>d.toLowerCase()===currentUser.dept);
-  const myProjects = DB.projects;
-
-  el.innerHTML = `
-    <div class="page-title">Update Work — ${dept}</div>
-    <div class="page-sub">Mark your steps as complete or in progress</div>
-
-    ${myProjects.length===0?`<div class="empty-state"><div class="empty-icon">📭</div><p>No projects to update.</p></div>`:''}
-
-    ${myProjects.map(p=>{
-      const steps = p.deptSteps[dept]||[];
-      return `<div class="card">
-        <div class="card-title">${p.name} <span style="font-size:12px;color:var(--muted);font-weight:400">${p.id}</span></div>
-        ${steps.length===0?'<div style="color:var(--muted);font-size:13px">No steps defined for this project yet.</div>':
-          steps.map((s,i)=>{
-            const ov=s.status!=='done'&&isOverdue(s.deadline);
-            return `<div class="step-update-row ${ov?'':''}">
-              <div class="step-num">#${i+1}</div>
-              <div class="step-name-label">
-                <div style="font-weight:500">${s.name}</div>
-                ${s.note?`<div style="font-size:11px;color:var(--muted)">${s.note}</div>`:''}
-              </div>
-              <div class="step-deadline-info" style="color:${ov?'var(--danger)':''}">${s.deadline?fmtDate(s.deadline)+(ov?' ⚠':daysLeft(s.deadline)!==null?' ('+daysLeft(s.deadline)+'d)':''):'No deadline'}</div>
-              <select class="step-status-select" onchange="updateStepStatus('${p.id}','${dept}',${i},this.value)">
-                <option value="pending" ${s.status==='pending'?'selected':''}>Pending</option>
-                <option value="inprogress" ${s.status==='inprogress'?'selected':''}>In Progress</option>
-                <option value="done" ${s.status==='done'?'selected':''}>✓ Done</option>
-              </select>
-              <button class="btn-outline btn-sm" onclick="deptAddNote('${p.id}','${dept}',${i})">Note</button>
-            </div>`;
-          }).join('')
-        }
-      </div>`;
-    }).join('')}
-  `;
-};
-
-function updateStepStatus(projId, dept, stepIdx, val) {
-  const proj = DB.projects.find(p=>p.id===projId);
-  proj.deptSteps[dept][stepIdx].status = val;
-  saveData(DB);
-  updateAlerts();
-  showToast('Status updated!','success');
+    <input type="hidden" id="as-dept" value="${dept}">
+    <div class="modal-actions">
+      <button class="btn-out" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveNewStep('${projId}')">Add Step</button>
+    </div>
+  `);
 }
 
-function deptAddNote(projId, dept, stepIdx) {
-  const proj = DB.projects.find(p=>p.id===projId);
-  const s = proj.deptSteps[dept][stepIdx];
+function saveNewStep(projId){
+  const name=document.getElementById('as-name').value.trim();
+  if(!name){toast('Name required','err');return;}
+  const dept=document.getElementById('as-dept').value;
+  const orig=document.getElementById('as-orig').value;
+  const proj=DB.projects.find(p=>p.id===projId);
+  proj.steps[dept].push({id:Date.now(),name,status:'pending',originalDeadline:orig||null,currentDeadline:orig||null,history:[],note:'',actionBy:document.getElementById('as-by').value});
+  saveDB(DB);
+  closeModal();
+  openProject(projId);
+  toast('Step added!','ok');
+}
+
+// ── DEPT DASHBOARD ──
+PAGES.deptDash = function(el){
+  const dept=CU.dept;
+  const overdue=getOverdue().filter(i=>i.dept===dept);
+  const myProjs=DB.projects.filter(p=>(p.steps[dept]||[]).length>0);
+  el.innerHTML=`
+    <div class="pt">${dept} Department</div>
+    <div class="ps">Your work across all projects</div>
+    ${overdue.length?`<div class="delay-banner">⚠ ${overdue.length} overdue step(s) need immediate attention.</div>`:''}
+    <div class="stats-row">
+      <div class="stat"><div class="stat-lbl">Projects</div><div class="stat-val">${myProjs.length}</div></div>
+      <div class="stat"><div class="stat-lbl">Overdue</div><div class="stat-val" style="color:var(--danger)">${overdue.length}</div></div>
+      <div class="stat"><div class="stat-lbl">Done</div><div class="stat-val" style="color:var(--success)">${myProjs.reduce((a,p)=>(p.steps[dept]||[]).filter(s=>s.status==='done'||s.status==='closed').length+a,0)}</div></div>
+      <div class="stat"><div class="stat-lbl">Pending</div><div class="stat-val" style="color:var(--warn)">${myProjs.reduce((a,p)=>(p.steps[dept]||[]).filter(s=>s.status!=='done'&&s.status!=='closed').length+a,0)}</div></div>
+    </div>
+    ${myProjs.map(p=>{
+      const steps=p.steps[dept]||[];
+      const dp=deptProgress(p,dept);
+      return `<div class="card">
+        <div class="card-title">${p.name} <span style="font-size:11px;color:var(--muted);font-weight:400">${p.id}</span>
+          <span class="badge b-muted" style="margin-left:auto">${dp}% done</span>
+        </div>
+        <div class="pipe-steps">${steps.map((s,i)=>{
+          const cls=s.status==='done'||s.status==='closed'?'done':s.status==='inprogress'?'inprogress':s.status==='hold'?'hold':(isOver(s.currentDeadline)?'overdue':'');
+          const dl=dLeft(s.currentDeadline);
+          return `<div class="step-chip ${cls}" onclick="deptUpdateStep('${p.id}','${dept}',${i})">${s.name}${s.currentDeadline?` [${dl!==null?(dl<0?Math.abs(dl)+'d late':dl===0?'Today':dl+'d'):''}]`:''}`;
+        }).join('')}</div>
+      </div>`;
+    }).join('')}
+    ${!myProjs.length?`<div class="empty"><div class="ei">📭</div><p>No projects assigned to ${dept} yet.</p></div>`:''}
+  `;
+};
+
+// ── DEPT UPDATE ──
+PAGES.deptUpdate = function(el){
+  const dept=CU.dept;
+  const projs=DB.projects;
+  el.innerHTML=`
+    <div class="pt">Update Steps — ${dept}</div>
+    <div class="ps">Mark progress on your department steps</div>
+    ${projs.map(p=>{
+      const steps=p.steps[dept]||[];
+      if(!steps.length)return'';
+      return `<div class="card">
+        <div class="card-title">${p.name} <span style="font-size:11px;color:var(--muted);font-weight:400">${p.id}</span></div>
+        ${steps.map((s,i)=>{
+          const ov=s.status!=='done'&&s.status!=='closed'&&isOver(s.currentDeadline);
+          const dl=dLeft(s.currentDeadline);
+          return `<div class="sup-row">
+            <div class="sup-num">#${i+1}</div>
+            <div class="sup-name">
+              <div class="sn-main">${s.name}</div>
+              ${s.actionBy?`<div class="sn-note">By: ${s.actionBy}</div>`:''}
+              ${s.note?`<div class="sn-note" style="color:var(--muted2)">${s.note.substring(0,60)}...</div>`:''}
+            </div>
+            <div class="sup-dl" style="color:${ov?'var(--danger)':dl!==null&&dl<=3?'var(--warn)':'var(--muted)'}">
+              ${s.originalDeadline&&s.originalDeadline!==s.currentDeadline?`<div style="font-size:9px;text-decoration:line-through;color:var(--muted2)">${fmtD(s.originalDeadline)}</div>`:''}
+              <div>${fmtD(s.currentDeadline)}</div>
+              ${ov?`<div style="font-size:9px">⚠ ${Math.abs(dl)}d late</div>`:dl!==null?`<div style="font-size:9px">${dl===0?'Today':dl>0?dl+'d left':'—'}</div>`:''}
+            </div>
+            <select class="sup-sel" onchange="deptUpdateStatus('${p.id}','${dept}',${i},this.value)">
+              <option value="pending" ${s.status==='pending'?'selected':''}>Pending</option>
+              <option value="inprogress" ${s.status==='inprogress'?'selected':''}>In Progress</option>
+              <option value="done" ${s.status==='done'||s.status==='closed'?'selected':''}>✓ Done</option>
+              <option value="hold" ${s.status==='hold'?'selected':''}>On Hold</option>
+            </select>
+            <button class="note-btn" onclick="deptAddNote('${p.id}','${dept}',${i})">Note</button>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('')}
+    ${!projs.length?`<div class="empty"><div class="ei">📭</div><p>No projects yet.</p></div>`:''}
+  `;
+};
+
+function deptUpdateStatus(projId,dept,idx,val){
+  const proj=DB.projects.find(p=>p.id===projId);
+  proj.steps[dept][idx].status=val;
+  saveDB(DB);
+  refreshAlerts();
+  toast('Updated!','ok');
+  // Check cascade if marking done after deadline
+  if(val==='done'&&isOver(proj.steps[dept][idx].currentDeadline)){
+    promptCascade(proj,dept,idx,()=>{ showPage('deptUpdate'); });
+  }
+}
+
+function deptUpdateStep(projId,dept,idx){
+  const proj=DB.projects.find(p=>p.id===projId);
+  const s=proj.steps[dept][idx];
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title">${s.name}</div>
+    <div class="modal-sub">${proj.name} — ${dept}</div>
+    ${s.originalDeadline&&s.originalDeadline!==s.currentDeadline?`
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+      <span class="hist-pill hp-orig">ORIG: ${fmtD(s.originalDeadline)}</span>
+      ${s.history.map((h,i)=>`<span class="hist-pill hp-rev">C${i+1}: ${fmtD(h.date)}</span>`).join('')}
+      <span class="hist-pill hp-curr">NOW: ${fmtD(s.currentDeadline)}</span>
+    </div>`:`
+    <div style="font-family:var(--fm);font-size:11px;color:var(--muted);margin-bottom:12px">Deadline: ${fmtD(s.currentDeadline)}</div>`}
+    ${s.history&&s.history.length?`<div class="card" style="background:var(--s3);padding:12px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--muted);font-family:var(--fm);letter-spacing:1px;margin-bottom:8px">DEADLINE REVISION HISTORY</div>
+      <div class="hist-timeline">
+        <div class="hist-item"><div class="hist-dot" style="background:var(--muted)"></div><div class="hist-label" style="color:var(--muted);font-family:var(--fm);font-size:10px;width:36px">ORIG</div><div style="font-family:var(--fm);font-size:11px">${fmtD(s.originalDeadline)}</div></div>
+        ${s.history.map((h,i)=>`<div class="hist-item"><div class="hist-dot" style="background:var(--warn)"></div><div style="font-family:var(--fm);font-size:10px;color:var(--muted);width:36px">C${i+1}</div><div style="font-family:var(--fm);font-size:11px;color:var(--warn)">${fmtD(h.date)}</div><div style="font-size:10px;color:var(--muted2);margin-left:8px">${h.reason||''}</div></div>`).join('')}
+        <div class="hist-item"><div class="hist-dot" style="background:var(--accent)"></div><div style="font-family:var(--fm);font-size:10px;color:var(--accent);width:36px">NOW</div><div style="font-family:var(--fm);font-size:11px;color:var(--accent)">${fmtD(s.currentDeadline)}</div></div>
+      </div>
+    </div>`:''}
+    <div class="fg"><label>Status</label>
+      <select id="du-status">
+        <option value="pending" ${s.status==='pending'?'selected':''}>Pending</option>
+        <option value="inprogress" ${s.status==='inprogress'?'selected':''}>In Progress</option>
+        <option value="done" ${s.status==='done'||s.status==='closed'?'selected':''}>✓ Done</option>
+        <option value="hold" ${s.status==='hold'?'selected':''}>On Hold</option>
+      </select>
+    </div>
+    <div class="fg"><label>Note / Remark</label><textarea id="du-note">${s.note||''}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn-out" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveDeptStep('${projId}','${dept}',${idx})">Save</button>
+    </div>
+  `);
+}
+
+function saveDeptStep(projId,dept,idx){
+  const proj=DB.projects.find(p=>p.id===projId);
+  const s=proj.steps[dept][idx];
+  s.status=document.getElementById('du-status').value;
+  s.note=document.getElementById('du-note').value;
+  saveDB(DB);
+  closeModal();
+  refreshAlerts();
+  toast('Saved!','ok');
+  showPage(curPage);
+}
+
+function deptAddNote(projId,dept,idx){
+  const proj=DB.projects.find(p=>p.id===projId);
+  const s=proj.steps[dept][idx];
   openModal(`
     <button class="modal-close" onclick="closeModal()">×</button>
     <div class="modal-title">Add Note</div>
     <div class="modal-sub">${s.name}</div>
-    <div class="form-group"><label>Note / Remark</label><textarea id="dn-note" placeholder="Enter your update, remark, or issue...">${s.note||''}</textarea></div>
-    <div class="form-actions">
-      <button class="btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn" onclick="saveDeptNote('${projId}','${dept}',${stepIdx})">Save Note</button>
+    <div class="fg"><label>Note / Remark</label><textarea id="dn-note" style="min-height:100px">${s.note||''}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn-out" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveDeptNote('${projId}','${dept}',${idx})">Save Note</button>
     </div>
   `);
 }
 
-function saveDeptNote(projId, dept, stepIdx) {
-  const proj = DB.projects.find(p=>p.id===projId);
-  proj.deptSteps[dept][stepIdx].note = document.getElementById('dn-note').value;
-  saveData(DB);
+function saveDeptNote(projId,dept,idx){
+  DB.projects.find(p=>p.id===projId).steps[dept][idx].note=document.getElementById('dn-note').value;
+  saveDB(DB);
   closeModal();
-  showPage('deptUpdate');
-  showToast('Note saved!','success');
+  toast('Note saved!','ok');
+  showPage(curPage);
 }
 
-// ─── HOD OVERVIEW ───
-pages.hodOverview = function(el) {
-  const total = DB.projects.length;
-  const delayed = DB.projects.filter(p=>projectStatus(p)==='delayed').length;
-  const completed = DB.projects.filter(p=>projectStatus(p)==='completed').length;
-  const overdueCount = getOverdueItems().length;
-
-  el.innerHTML = `
-    <div class="page-title">HOD Overview</div>
-    <div class="page-sub">Head of Department — complete project visibility</div>
-
+// ── HOD OVERVIEW ──
+PAGES.hodOverview = function(el){
+  const total=DB.projects.length;
+  const delayed=DB.projects.filter(p=>projStatus(p)==='delayed').length;
+  const overdue=getOverdue().length;
+  el.innerHTML=`
+    <div class="pt">HOD Overview</div>
+    <div class="ps">Head of Department — full project visibility</div>
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Total Projects</div><div class="stat-value">${total}</div></div>
-      <div class="stat-card"><div class="stat-label">Delayed</div><div class="stat-value" style="color:var(--danger)">${delayed}</div></div>
-      <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--success)">${completed}</div></div>
-      <div class="stat-card"><div class="stat-label">Overdue Tasks</div><div class="stat-value" style="color:var(--warn)">${overdueCount}</div></div>
+      <div class="stat"><div class="stat-lbl">Total Projects</div><div class="stat-val">${total}</div></div>
+      <div class="stat"><div class="stat-lbl">Delayed</div><div class="stat-val" style="color:var(--danger)">${delayed}</div></div>
+      <div class="stat"><div class="stat-lbl">Completed</div><div class="stat-val" style="color:var(--success)">${DB.projects.filter(p=>projStatus(p)==='completed').length}</div></div>
+      <div class="stat"><div class="stat-lbl">Overdue Tasks</div><div class="stat-val" style="color:var(--warn)">${overdue}</div></div>
     </div>
-
-    ${DB.projects.length===0?`<div class="empty-state"><div class="empty-icon">📭</div><p>No projects onboarded yet.</p></div>`:''}
-
+    ${!total?`<div class="empty"><div class="ei">📭</div><p>No projects yet.</p></div>`:''}
     ${DB.projects.map(p=>{
-      const st = projectStatus(p);
-      const pct = projectProgress(p);
-      return `<div class="hod-project-row">
-        <div class="hod-proj-header" onclick="hodToggle('hod-body-${p.id}',this)">
-          <div class="hod-proj-name">${p.name}</div>
-          <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">${p.id}</span>
-          <span class="badge ${st==='delayed'?'badge-danger':st==='completed'?'badge-success':'badge-info'}">${st}</span>
-          <div class="progress-bar" style="width:100px"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <span style="font-size:12px;font-family:var(--font-mono)">${pct}%</span>
+      const st=projStatus(p);const pct=projProgress(p);
+      return `<div class="hod-proj">
+        <div class="hod-proj-hd" onclick="hodToggle('hb-${p.id}',this)">
+          <div style="font-family:var(--fh);font-size:17px;font-weight:800;flex:1">${p.name}</div>
+          <span style="font-family:var(--fm);font-size:10px;color:var(--muted)">${p.id}</span>
+          <span class="badge ${st==='delayed'?'b-bad':st==='completed'?'b-ok':'b-info'}">${st}</span>
+          <div class="pbar-wrap" style="width:120px"><div class="pbar"><div class="pbar-fill" style="width:${pct}%;background:${pct===100?'var(--success)':st==='delayed'?'var(--danger)':'var(--accent)'}"></div></div><div class="pbar-pct">${pct}%</div></div>
           <span class="chevron">›</span>
         </div>
-        <div id="hod-body-${p.id}" style="display:none">
+        <div id="hb-${p.id}" style="display:none">
           <div class="hod-dept-grid">
             ${DEPTS.map(d=>{
-              const steps=p.deptSteps[d]||[];
-              const dp=deptProgress(p,d);
-              const dOverdue=steps.some(s=>s.status!=='done'&&isOverdue(s.deadline));
-              return `<div class="hod-dept-cell" style="${dOverdue?'border:1px solid var(--danger);animation:flash-border 1.6s infinite':''}">
-                <div class="hod-dept-label">${d}</div>
-                <div class="hod-dept-pct" style="color:${dp===100?'var(--success)':dOverdue?'var(--danger)':'var(--text)'}">${dp}%</div>
-                <div style="font-size:10px;color:var(--muted);margin-top:3px">${steps.filter(s=>s.status==='done').length}/${steps.length} done</div>
-                ${dOverdue?`<div style="font-size:10px;color:var(--danger);margin-top:2px">⚠ Overdue</div>`:''}
+              const ss=p.steps[d]||[];const dp=deptProgress(p,d);
+              const dOver=ss.some(s=>s.status!=='done'&&s.status!=='closed'&&isOver(s.currentDeadline));
+              return `<div class="hod-dept-cell" style="${dOver?'border:1px solid var(--danger)':''}">
+                <div class="hdc-lbl">${d}</div>
+                <div class="hdc-val" style="color:${dp===100?'var(--success)':dOver?'var(--danger)':'var(--text)'}">${dp}%</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">${ss.filter(s=>s.status==='done'||s.status==='closed').length}/${ss.length}</div>
+                ${dOver?`<div style="font-size:9px;color:var(--danger);margin-top:2px">⚠ OVERDUE</div>`:''}
               </div>`;
             }).join('')}
           </div>
@@ -1392,118 +1598,109 @@ pages.hodOverview = function(el) {
   `;
 };
 
-pages.hodProjects = function(el) {
-  el.innerHTML = `
-    <div class="page-title">All Projects — HOD View</div>
-    <div class="page-sub">Full read-only view of all projects and step status</div>
+PAGES.hodProjects = function(el){
+  el.innerHTML=`
+    <div class="pt">All Projects — HOD View</div>
+    <div class="ps">Full read-only status of all projects and steps</div>
     ${DB.projects.map(p=>{
-      const st = projectStatus(p);
+      const st=projStatus(p);
       return `<div class="card">
-        <div class="card-title">${p.name} <span style="font-size:12px;color:var(--muted);font-weight:400">${p.id} • ${p.client||'No client'}</span>
-          <span class="badge ${st==='delayed'?'badge-danger':st==='completed'?'badge-success':'badge-info'}" style="margin-left:auto">${st}</span>
+        <div class="card-title">${p.name} <span style="font-size:11px;color:var(--muted);font-weight:400">${p.id}</span>
+          <span class="badge ${st==='delayed'?'b-bad':st==='completed'?'b-ok':'b-info'}" style="margin-left:auto">${st}</span>
         </div>
-        <div class="dept-pipeline">
-          ${DEPTS.map(dept=>{
-            const steps=p.deptSteps[dept]||[];
-            const hasOverdue=steps.some(s=>s.status!=='done'&&isOverdue(s.deadline));
-            return `<div class="dept-row ${hasOverdue?'overdue-flash':''}">
-              <div class="dept-name">${dept}</div>
-              <div class="dept-steps">
-                ${steps.map(s=>{
-                  const cls=s.status==='done'?'done':s.status==='inprogress'?'inprogress':(s.status!=='done'&&isOverdue(s.deadline))?'overdue':'';
-                  return `<div class="step-chip ${cls}" title="${s.name} — ${fmtDate(s.deadline)}">${s.name}</div>`;
-                }).join('')}
-              </div>
-              <div class="dept-deadline">${deptProgress(p,dept)}%</div>
-            </div>`;
-          }).join('')}
-        </div>
+        ${DEPTS.map(d=>{
+          const ss=p.steps[d]||[];const hasOver=ss.some(s=>s.status!=='done'&&s.status!=='closed'&&isOver(s.currentDeadline));
+          return `<div class="pipe-row ${hasOver?'overdue-flash':''}">
+            <div class="pipe-name">${d}</div>
+            <div class="pipe-steps">${ss.map(s=>{
+              const cls=s.status==='done'||s.status==='closed'?'done':s.status==='inprogress'?'inprogress':s.status==='hold'?'hold':(isOver(s.currentDeadline)?'overdue':'');
+              return `<div class="step-chip ${cls}" title="${s.name} — Orig: ${fmtD(s.originalDeadline)} → Now: ${fmtD(s.currentDeadline)}${s.history&&s.history.length?' ('+s.history.length+' revisions)':''}">${s.name}`;
+            }).join('')}${!ss.length?'<span style="color:var(--muted2);font-size:11px">No steps</span>':''}</div>
+            <div class="pipe-info">${deptProgress(p,d)}%</div>
+          </div>`;
+        }).join('')}
       </div>`;
     }).join('')}
-    ${!DB.projects.length?`<div class="empty-state"><div class="empty-icon">📭</div><p>No projects yet.</p></div>`:''}
+    ${!DB.projects.length?`<div class="empty"><div class="ei">📭</div><p>No projects yet.</p></div>`:''}
   `;
 };
 
-function hodToggle(id, el) {
-  const body = document.getElementById(id);
-  const chev = el.querySelector('.chevron');
-  if (body.style.display==='none') {
-    body.style.display='block';
-    if(chev) chev.classList.add('open');
-  } else {
-    body.style.display='none';
-    if(chev) chev.classList.remove('open');
-  }
+function hodToggle(id,el){
+  const b=document.getElementById(id);
+  const ch=el.querySelector('.chevron');
+  if(b.style.display==='none'){b.style.display='block';if(ch)ch.classList.add('open');}
+  else{b.style.display='none';if(ch)ch.classList.remove('open');}
 }
 
-// ─── ENGINEER DASHBOARD ───
-pages.engDashboard = function(el) {
-  const overdueItems = getOverdueItems();
-  const total = DB.projects.length;
-  const delayed = DB.projects.filter(p=>projectStatus(p)==='delayed').length;
-
-  el.innerHTML = `
-    <div class="page-title">Project Engineer Dashboard</div>
-    <div class="page-sub">Track all projects and monitor overdue tasks</div>
-
-    ${overdueItems.length ? `<div class="delay-banner" style="animation:flash-border 1.5s infinite">⚠️ <strong>${overdueItems.length} overdue task(s)</strong> across projects — immediate attention required!</div>` : '<div style="background:rgba(0,201,122,0.1);border:1px solid rgba(0,201,122,0.3);border-radius:8px;padding:12px 16px;margin-bottom:16px;color:var(--success);font-size:13px;">✅ All tasks are on track. No overdue items.</div>'}
-
+// ── ENGINEER DASHBOARD ──
+PAGES.engDash = function(el){
+  const items=getOverdue();
+  const total=DB.projects.length;
+  const delayed=DB.projects.filter(p=>projStatus(p)==='delayed').length;
+  el.innerHTML=`
+    <div class="pt">Engineer Dashboard</div>
+    <div class="ps">Project health and overdue monitoring</div>
+    ${items.length
+      ?`<div class="delay-banner" style="animation:flash 1.5s infinite">⚠ <strong>${items.length} overdue task(s)</strong> — immediate attention required!</div>`
+      :`<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:6px;padding:10px 14px;margin-bottom:14px;color:var(--success);font-size:13px">✅ All tasks on track. No overdue items.</div>`
+    }
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Total Projects</div><div class="stat-value">${total}</div></div>
-      <div class="stat-card"><div class="stat-label">Delayed Projects</div><div class="stat-value" style="color:var(--danger)">${delayed}</div></div>
-      <div class="stat-card"><div class="stat-label">Overdue Tasks</div><div class="stat-value" style="color:var(--warn)">${overdueItems.length}</div></div>
-      <div class="stat-card"><div class="stat-label">On Track</div><div class="stat-value" style="color:var(--success)">${total-delayed}</div></div>
+      <div class="stat"><div class="stat-lbl">Projects</div><div class="stat-val">${total}</div></div>
+      <div class="stat"><div class="stat-lbl">Delayed</div><div class="stat-val" style="color:var(--danger)">${delayed}</div></div>
+      <div class="stat"><div class="stat-lbl">Overdue Tasks</div><div class="stat-val" style="color:var(--warn)">${items.length}</div></div>
+      <div class="stat"><div class="stat-lbl">On Track</div><div class="stat-val" style="color:var(--success)">${total-delayed}</div></div>
     </div>
-
     <div class="card">
-      <div class="card-title">📁 Projects Status</div>
-      ${total===0?`<div class="empty-state"><div class="empty-icon">📭</div><p>No projects yet.</p></div>`:''}
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>ID</th><th>Project</th><th>Client</th><th>Progress</th><th>Status</th><th>Overdue Steps</th></tr></thead>
-          <tbody>
+      <div class="card-title">📁 Project Status</div>
+      ${!total?`<div class="empty"><div class="ei">📭</div><p>No projects.</p></div>`:`
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>ID</th><th>Project</th><th>Client</th><th>CDD</th><th>Progress</th><th>Status</th><th>Overdue Steps</th></tr></thead>
+        <tbody>
           ${DB.projects.map(p=>{
-            const pct=projectProgress(p);
-            const st=projectStatus(p);
-            const ov=getOverdueItems().filter(i=>i.proj.id===p.id).length;
+            const pct=projProgress(p);const st=projStatus(p);
+            const ov=getOverdue().filter(i=>i.proj.id===p.id).length;
             return `<tr>
-              <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">${p.id}</span></td>
+              <td><span style="font-family:var(--fm);font-size:10px;color:var(--muted)">${p.id}</span></td>
               <td><strong>${p.name}</strong></td>
               <td>${p.client||'—'}</td>
-              <td><div class="progress-bar" style="width:100px;display:inline-block"><div class="progress-fill" style="width:${pct}%"></div></div> <span style="font-size:11px;color:var(--muted)">${pct}%</span></td>
-              <td><span class="badge ${st==='delayed'?'badge-danger':st==='completed'?'badge-success':'badge-info'}">${st}</span></td>
-              <td>${ov?`<span class="badge badge-danger" style="animation:flash-border 1.5s infinite">⚠ ${ov} overdue</span>`:`<span style="color:var(--success);font-size:12px">✓ None</span>`}</td>
+              <td><span style="font-family:var(--fm);font-size:11px">${fmtD(p.cdd||p.endDate)}</span></td>
+              <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${pct}%;background:${pct===100?'var(--success)':st==='delayed'?'var(--danger)':'var(--accent)'}"></div></div><div class="pbar-pct">${pct}%</div></div></td>
+              <td><span class="badge ${st==='delayed'?'b-bad':st==='completed'?'b-ok':'b-info'}">${st}</span></td>
+              <td>${ov?`<span class="badge b-bad" style="animation:flash 1.5s infinite">⚠ ${ov}</span>`:`<span style="color:var(--success);font-size:12px">✓</span>`}</td>
             </tr>`;
           }).join('')}
-          </tbody>
-        </table>
-      </div>
+        </tbody>
+      </table></div>`}
     </div>
   `;
 };
 
-pages.engAlerts = function(el) {
-  const items = getOverdueItems();
-  el.innerHTML = `
-    <div class="page-title">⚠ Overdue Alerts</div>
-    <div class="page-sub">Tasks that have missed their deadlines</div>
-
-    ${items.length===0?`<div class="empty-state"><div class="empty-icon">✅</div><p>No overdue tasks. All departments are on track!</p></div>`:''}
-
+PAGES.engAlerts = function(el){
+  const items=getOverdue();
+  el.innerHTML=`
+    <div class="pt">⚠ Overdue Alerts</div>
+    <div class="ps">Steps that have missed their committed deadlines</div>
+    ${!items.length?`<div class="empty"><div class="ei">✅</div><p>No overdue tasks. All on track!</p></div>`:''}
     ${items.map(i=>{
-      const dl=daysLeft(i.step.deadline);
-      return `<div class="card" style="border-color:var(--danger);animation:flash-border 1.6s infinite">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+      const dl=dLeft(i.step.currentDeadline);
+      const shifted=i.step.originalDeadline&&i.step.currentDeadline&&i.step.originalDeadline!==i.step.currentDeadline;
+      return `<div class="card overdue-flash" style="border-color:var(--danger)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
-            <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:4px">${i.proj.name}</div>
-            <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${i.proj.id} • ${i.dept} Department</div>
-            <div style="font-size:14px">Step: <strong>${i.step.name}</strong></div>
-            ${i.step.note?`<div style="font-size:12px;color:var(--muted);margin-top:4px">${i.step.note}</div>`:''}
+            <div style="font-family:var(--fh);font-size:18px;font-weight:800;margin-bottom:3px">${i.proj.name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${i.proj.id} • ${i.dept}</div>
+            <div style="font-size:14px;font-weight:500">${i.step.name}</div>
+            ${i.step.actionBy?`<div style="font-size:11px;color:var(--muted);margin-top:3px">Action By: ${i.step.actionBy}</div>`:''}
+            ${shifted?`<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+              <span class="hist-pill hp-orig">ORIG: ${fmtD(i.step.originalDeadline)}</span>
+              ${(i.step.history||[]).map((h,hi)=>`<span class="hist-pill hp-rev">C${hi+1}: ${fmtD(h.date)}</span>`).join('')}
+              <span class="hist-pill hp-curr">NOW: ${fmtD(i.step.currentDeadline)}</span>
+            </div>`:''}
           </div>
           <div style="text-align:right">
-            <div style="font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--danger)">${Math.abs(dl)}d</div>
-            <div style="font-size:11px;color:var(--muted)">overdue</div>
-            <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:4px">Due: ${fmtDate(i.step.deadline)}</div>
+            <div style="font-family:var(--fh);font-size:36px;font-weight:900;color:var(--danger);line-height:1">${Math.abs(dl)}</div>
+            <div style="font-size:11px;color:var(--muted)">days overdue</div>
+            <div style="font-family:var(--fm);font-size:10px;color:var(--muted);margin-top:4px">Due: ${fmtD(i.step.currentDeadline)}</div>
           </div>
         </div>
       </div>`;
@@ -1512,7 +1709,7 @@ pages.engAlerts = function(el) {
 };
 
 // Init
-selectRole('admin');
+selRole('admin');
 </script>
 </body>
 </html>
