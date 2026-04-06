@@ -3,11 +3,12 @@
 // ============================================================
 
 // Initialize Supabase client (loaded via CDN in HTML)
-let supabase;
+let _supabase;
 
 function initSupabase() {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  return supabase;
+  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabase = _supabase;
+  return _supabase;
 }
 
 // ---- AUTH ----
