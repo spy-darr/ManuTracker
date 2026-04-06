@@ -1,32 +1,31 @@
 // ============================================================
-// supabase.js - All Supabase API calls
+// db.js - All Supabase API calls
 // ============================================================
 
 // Initialize Supabase client (loaded via CDN in HTML)
-let _supabase;
+let db;
 
 function initSupabase() {
-  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  supabase = _supabase;
-  return _supabase;
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return db;
 }
 
 // ---- AUTH ----
 async function signIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
 
 async function signOut() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await db.auth.signOut();
   if (error) throw error;
   localStorage.removeItem('currentProfile');
   window.location.href = 'index.html';
 }
 
 async function getSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await db.auth.getSession();
   return session;
 }
 
@@ -52,7 +51,7 @@ async function getCurrentProfile() {
 async function createUser(email, password, fullName, role) {
   // Create auth user via admin - requires service role in production
   // For GitHub Pages, we use signUp then update profile
-  const { data: authData, error: authErr } = await supabase.auth.signUp({
+  const { data: authData, error: authErr } = await db.auth.signUp({
     email,
     password,
     options: { data: { full_name: fullName } }
@@ -60,7 +59,7 @@ async function createUser(email, password, fullName, role) {
   if (authErr) throw authErr;
   
   // Insert profile
-  const { data, error } = await supabase.from('profiles').insert({
+  const { data, error } = await db.from('profiles').insert({
     id: authData.user.id,
     full_name: fullName,
     email: email,
@@ -72,13 +71,13 @@ async function createUser(email, password, fullName, role) {
 }
 
 async function getAllUsers() {
-  const { data, error } = await supabase.from('profiles').select('*').order('full_name');
+  const { data, error } = await db.from('profiles').select('*').order('full_name');
   if (error) throw error;
   return data || [];
 }
 
 async function getUsersByRole(role) {
-  const { data, error } = await supabase.from('profiles').select('*').eq('role', role);
+  const { data, error } = await db.from('profiles').select('*').eq('role', role);
   if (error) throw error;
   return data || [];
 }
@@ -105,7 +104,7 @@ async function getProjectById(id) {
 
 async function createProject(projectData) {
   const profile = await getCurrentProfile();
-  const { data, error } = await supabase.from('projects').insert({
+  const { data, error } = await db.from('projects').insert({
     ...projectData,
     created_by: profile.id
   }).select().single();
@@ -124,7 +123,7 @@ async function updateProject(id, updates) {
 }
 
 async function deleteProject(id) {
-  const { error } = await supabase.from('projects').delete().eq('id', id);
+  const { error } = await db.from('projects').delete().eq('id', id);
   if (error) throw error;
 }
 
@@ -153,7 +152,7 @@ async function getTasksByDept(department, userId) {
 
 async function createTask(taskData) {
   const profile = await getCurrentProfile();
-  const { data, error } = await supabase.from('department_tasks').insert({
+  const { data, error } = await db.from('department_tasks').insert({
     ...taskData,
     created_by: profile.id
   }).select().single();
@@ -175,7 +174,7 @@ async function updateTask(id, updates) {
 }
 
 async function deleteTask(id) {
-  const { error } = await supabase.from('department_tasks').delete().eq('id', id);
+  const { error } = await db.from('department_tasks').delete().eq('id', id);
   if (error) throw error;
 }
 
@@ -192,7 +191,7 @@ async function checkAndUpdateProjectDelay(projectId) {
   
   const isDelayed = overdueTask && overdueTask.length > 0;
   
-  await supabase.from('projects').update({
+  await db.from('projects').update({
     is_delayed: isDelayed,
     status: isDelayed ? 'delayed' : 'active'
   }).eq('id', projectId).eq('status', isDelayed ? 'active' : 'delayed');
@@ -201,7 +200,7 @@ async function checkAndUpdateProjectDelay(projectId) {
 // ---- TASK UPDATES ----
 async function addTaskUpdate(taskId, projectId, department, updateText) {
   const profile = await getCurrentProfile();
-  const { data, error } = await supabase.from('task_updates').insert({
+  const { data, error } = await db.from('task_updates').insert({
     task_id: taskId,
     project_id: projectId,
     department: department,
@@ -225,7 +224,7 @@ async function getTaskUpdates(taskId) {
 // ---- DELAY LOG ----
 async function logDelay(projectId, oldEdd, newEdd, reason, department) {
   const profile = await getCurrentProfile();
-  const { data, error } = await supabase.from('project_delay_log').insert({
+  const { data, error } = await db.from('project_delay_log').insert({
     project_id: projectId,
     old_edd: oldEdd,
     new_edd: newEdd,
@@ -264,19 +263,19 @@ async function getMyNotifications() {
 }
 
 async function markNotifRead(id) {
-  await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+  await db.from('notifications').update({ is_read: true }).eq('id', id);
 }
 
 async function markAllNotifsRead() {
   const profile = await getCurrentProfile();
-  await supabase.from('notifications').update({ is_read: true }).eq('user_id', profile.id);
+  await db.from('notifications').update({ is_read: true }).eq('user_id', profile.id);
 }
 
 // ---- DASHBOARD STATS ----
 async function getDashboardStats() {
   const [projects, tasks] = await Promise.all([
-    supabase.from('projects').select('status, is_delayed'),
-    supabase.from('department_tasks').select('status, department, deadline')
+    db.from('projects').select('status, is_delayed'),
+    db.from('department_tasks').select('status, department, deadline')
   ]);
   
   const today = new Date().toISOString().split('T')[0];
@@ -302,7 +301,7 @@ async function getDashboardStats() {
 
 // Realtime subscription helper
 function subscribeToProjectUpdates(projectId, callback) {
-  return supabase
+  return db
     .channel(`project-${projectId}`)
     .on('postgres_changes', {
       event: '*',
