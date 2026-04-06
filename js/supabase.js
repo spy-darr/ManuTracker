@@ -21,7 +21,7 @@ async function signOut() {
   const { error } = await db.auth.signOut();
   if (error) throw error;
   localStorage.removeItem('currentProfile');
-  window.location.href = 'index.html';
+  window.location.href = '../index.html';
 }
 
 async function getSession() {
