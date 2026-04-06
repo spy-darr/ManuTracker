@@ -2,8 +2,8 @@
 // config.js - Supabase Configuration
 // IMPORTANT: Replace these with your actual Supabase credentials
 // ============================================================
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://gjrhbxlkwrshprbkyjxe.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqcmhieGxrd3JzaHByYmt5anhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NzQ5NDAsImV4cCI6MjA5MDU1MDk0MH0.KuzP7Uvy5RsItKayIYTqw1phqmp8_NscbRQy-pzOTgE';
 
 // Departments list
 const DEPARTMENTS = [
