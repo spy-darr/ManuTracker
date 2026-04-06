@@ -195,7 +195,8 @@ function renderNav(profile, activePage) {
     { id: 'dashboard', label: 'Dashboard', href: isAdmin ? 'admin-dashboard.html' : isHOD ? 'hod-dashboard.html' : 'dept-dashboard.html', icon: '🏠' },
     ...(isAdmin ? [
       { id: 'projects', label: 'Projects', href: 'projects.html', icon: '📋' },
-      { id: 'users', label: 'Users', href: 'users.html', icon: '👥' },
+      { id: 'import',   label: 'Import',   href: 'import.html',   icon: '📥' },
+      { id: 'users',    label: 'Users',    href: 'users.html',    icon: '👥' },
     ] : []),
     ...(isHOD ? [
       { id: 'projects', label: 'All Projects', href: 'hod-projects.html', icon: '📋' },

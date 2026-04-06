@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Projects – Project Tracker</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <!-- SheetJS for Excel parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+  <style>
+    .import-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+    }
+    .import-zone:hover, .import-zone.drag-over {
+      border-color: var(--primary-light);
+      background: #eff6ff;
+    }
+    .import-zone-icon { font-size: 48px; margin-bottom: 12px; }
+    .import-zone-title { font-size: 16px; font-weight: 700; color: var(--primary); }
+    .import-zone-sub { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+    .mapping-table { width: 100%; border-collapse: collapse; }
+    .mapping-table th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .mapping-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    .mapping-table tr:last-child td { border-bottom: none; }
+
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .preview-table th { background: var(--primary); color: white; padding: 8px 12px; text-align: left; white-space: nowrap; }
+    .preview-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .preview-table tr:hover td { background: #f8fafc; }
+    .preview-table tr.duplicate td { background: #fef3c7; }
+    .preview-table tr.error-row td { background: #fee2e2; }
+
+    .step-indicator { display: flex; gap: 0; margin-bottom: 28px; }
+    .step { flex: 1; padding: 10px 16px; text-align: center; font-size: 12px; font-weight: 700; background: var(--bg); color: var(--text-muted); border-bottom: 3px solid var(--border); }
+    .step.active { background: #eff6ff; color: var(--primary-light); border-bottom-color: var(--primary-light); }
+    .step.done { background: #f0fdf4; color: #065f46; border-bottom-color: var(--success); }
+
+    .badge-new { background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .badge-dup { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .badge-err { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+
+    .import-log { max-height: 300px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; }
+    .log-ok   { color: #4ade80; }
+    .log-skip { color: #fbbf24; }
+    .log-err  { color: #f87171; }
+    .log-info { color: #94a3b8; }
+  </style>
+</head>
+<body>
+<div id="nav-root"></div>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">📥 Import Projects</div>
+      <div class="page-subtitle">Import projects from Excel (.xlsx) or CSV file</div>
+    </div>
+    <a href="projects.html" class="btn btn-secondary">← Back to Projects</a>
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="step-indicator">
+    <div class="step active" id="step-1">1. Upload File</div>
+    <div class="step" id="step-2">2. Map Columns</div>
+    <div class="step" id="step-3">3. Preview & Import</div>
+    <div class="step" id="step-4">4. Done</div>
+  </div>
+
+  <!-- STEP 1: Upload -->
+  <div id="panel-1">
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header"><div class="card-title">Upload Your File</div></div>
+      <div class="card-body">
+        <div class="import-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <div class="import-zone-icon">📂</div>
+          <div class="import-zone-title">Click to browse or drag & drop</div>
+          <div class="import-zone-sub">Supports .xlsx, .xls, .csv files</div>
+        </div>
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFileSelect(event)">
+      </div>
+    </div>
+
+    <!-- Format Guide -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">📋 Expected Format (for CSV/Excel)</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+          Your file should have column headers in the <strong>first row</strong>. The importer will auto-detect and let you map columns.
+          Supported column names (case-insensitive):
+        </p>
+        <div style="overflow-x:auto;">
+          <table class="mapping-table">
+            <thead><tr><th>Field</th><th>Common Column Names</th><th>Required?</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Project Code / WO</strong></td><td>WO, Project Code, Project No, Work Order, PO No</td><td><span class="badge badge-err">Required</span></td></tr>
+              <tr><td><strong>Project Name</strong></td><td>Project Name, Description, Name, Title</td><td><span class="badge badge-dup">Optional</span></td></tr>
+              <tr><td><strong>Customer</strong></td><td>Customer, Client, Customer Name</td><td><span class="badge badge-dup">Optional</span></td></tr>
+              <tr><td><strong>Project Engineer</strong></td><td>Project Engg., Engineer, Engg, PE</td><td><span class="badge badge-dup">Optional</span></td></tr>
+              <tr><td><strong>CDD</strong></td><td>CDD, CDD AS PER PO/LOI, Customer Delivery Date, Delivery Date</td><td><span class="badge badge-dup">Optional</span></td></tr>
+              <tr><td><strong>EDD</strong></td><td>EDD, Expected Delivery Date, Exp. Dispatch</td><td><span class="badge badge-dup">Optional</span></td></tr>
+              <tr><td><strong>PO Date</strong></td><td>PO Date, PO Receipt, Order Date</td><td><span class="badge badge-dup">Optional</span></td></tr>
+              <tr><td><strong>Status</strong></td><td>Status, Action Status</td><td><span class="badge badge-dup">Optional</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:#f0fdf4;border-radius:8px;font-size:13px;color:#065f46;">
+          💡 <strong>Tip:</strong> The SUMMERY sheet from your Master Tracking Excel will be auto-detected.
+          Just upload the file and we'll extract the project list automatically.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Map Columns -->
+  <div id="panel-2" style="display:none;">
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Map Columns</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;" id="file-info"></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="resetImport()">↺ Re-upload</button>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+          Map each field to the corresponding column in your file. Auto-detected matches are pre-filled.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;" id="mapping-fields">
+        </div>
+        <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
+          <button class="btn btn-secondary" onclick="resetImport()">Cancel</button>
+          <button class="btn btn-primary" onclick="previewData()">Preview Import →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Preview -->
+  <div id="panel-3" style="display:none;">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div class="card-title">Preview Import</div>
+        <div id="preview-summary" style="display:flex;gap:8px;"></div>
+      </div>
+      <div class="card-body" style="padding:12px;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="skip-duplicates" checked> Skip duplicates (projects already in system)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="skip-empty"> Skip rows with missing project code
+          </label>
+        </div>
+        <div style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+          <table class="preview-table" id="preview-table">
+            <thead><tr id="preview-thead"></tr></thead>
+            <tbody id="preview-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <button class="btn btn-secondary" onclick="goToStep(2)">← Back to Mapping</button>
+        <button class="btn btn-primary" id="import-btn" onclick="runImport()">
+          ✅ Import Projects
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Done -->
+  <div id="panel-4" style="display:none;">
+    <div class="card">
+      <div class="card-body" style="text-align:center;padding:40px;">
+        <div style="font-size:56px;margin-bottom:16px;">✅</div>
+        <div style="font-size:22px;font-weight:800;color:var(--primary);margin-bottom:8px;">Import Complete!</div>
+        <div id="done-summary" style="font-size:14px;color:var(--text-muted);margin-bottom:24px;"></div>
+        <div class="import-log" id="import-log" style="text-align:left;margin-bottom:24px;"></div>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button class="btn btn-secondary" onclick="resetImport()">Import Another File</button>
+          <a href="projects.html" class="btn btn-primary">View All Projects →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let profile, parsedData = [], columnHeaders = [], mappings = {}, existingCodes = new Set();
+
+// Field definitions with auto-detect keywords
+const FIELD_DEFS = [
+  { key: 'project_code', label: 'Project Code / WO', required: true,  keywords: ['wo','work order','project code','project no','wono','order no','po no'] },
+  { key: 'project_name', label: 'Project Name',       required: false, keywords: ['project name','name','description','title','subject'] },
+  { key: 'customer_name',label: 'Customer Name',      required: false, keywords: ['customer','client','customer name','party'] },
+  { key: 'project_engineer', label: 'Project Engineer', required: false, keywords: ['project engg','engineer','engg','pe','proj eng','project eng'] },
+  { key: 'cdd',          label: 'CDD (Customer Delivery Date)', required: false, keywords: ['cdd','customer delivery','cdd as per','delivery date','contractual'] },
+  { key: 'edd',          label: 'EDD (Expected Dispatch Date)', required: false, keywords: ['edd','expected delivery','exp. dispatch','expected dispatch'] },
+  { key: 'po_date',      label: 'PO Date',            required: false, keywords: ['po date','po receipt','order date','purchase order date'] },
+  { key: 'status',       label: 'Status',              required: false, keywords: ['status','action status','project status'] },
+];
+
+async function init() {
+  profile = await requireAuth(['admin']);
+  if (!profile) return;
+  document.getElementById('nav-root').innerHTML = renderNav(profile, 'projects');
+  renderNotifBell('notif-container');
+
+  // Get existing project codes to detect duplicates
+  const projects = await getAllProjects();
+  existingCodes = new Set(projects.map(p => p.project_code.trim().toUpperCase()));
+
+  setupDropZone();
+}
+
+function setupDropZone() {
+  const zone = document.getElementById('drop-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      let rows = [];
+      if (ext === 'csv') {
+        rows = parseCSV(e.target.result);
+      } else {
+        // Excel - try to find best sheet
+        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+        rows = findBestSheet(wb, file.name);
+      }
+
+      if (!rows || rows.length < 2) {
+        showToast('File appears empty or unreadable', 'error');
+        return;
+      }
+
+      columnHeaders = rows[0].map(h => String(h || '').trim());
+      parsedData = rows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+
+      document.getElementById('file-info').textContent =
+        `${file.name} — ${parsedData.length} data rows, ${columnHeaders.length} columns`;
+
+      autoDetectMappings();
+      renderMappingFields();
+      goToStep(2);
+    } catch(err) {
+      showToast('Error reading file: ' + err.message, 'error');
+      console.error(err);
+    }
+  };
+
+  if (ext === 'csv') reader.readAsText(file);
+  else reader.readAsArrayBuffer(file);
+}
+
+function findBestSheet(wb, filename) {
+  // Priority: SUMMERY sheet, then first sheet with most data
+  const sheetNames = wb.SheetNames;
+
+  // Try SUMMERY first (from the master tracking file)
+  const summeryIdx = sheetNames.findIndex(s => s.toUpperCase().includes('SUMM'));
+  if (summeryIdx >= 0) {
+    const rows = sheetToRows(wb.Sheets[sheetNames[summeryIdx]]);
+    if (rows.length > 2) {
+      showToast(`Auto-detected "${sheetNames[summeryIdx]}" sheet`, 'info');
+      return rows;
+    }
+  }
+
+  // Try sheet with most rows
+  let best = null, bestCount = 0;
+  sheetNames.forEach(name => {
+    const rows = sheetToRows(wb.Sheets[name]);
+    if (rows.length > bestCount) { bestCount = rows.length; best = rows; }
+  });
+  return best;
+}
+
+function sheetToRows(sheet) {
+  const data = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+  // Find first non-empty row as header
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(10, data.length); i++) {
+    if (data[i].filter(c => c).length > 2) { headerIdx = i; break; }
+  }
+  return data.slice(headerIdx);
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  return lines.map(line => {
+    const result = [];
+    let current = '', inQuotes = false;
+    for (let c of line) {
+      if (c === '"') inQuotes = !inQuotes;
+      else if (c === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+      else current += c;
+    }
+    result.push(current.trim());
+    return result;
+  });
+}
+
+function autoDetectMappings() {
+  mappings = {};
+  FIELD_DEFS.forEach(field => {
+    const idx = columnHeaders.findIndex(h => {
+      const hl = h.toLowerCase().trim();
+      return field.keywords.some(k => hl.includes(k) || k.includes(hl));
+    });
+    if (idx >= 0) mappings[field.key] = idx;
+  });
+}
+
+function renderMappingFields() {
+  const container = document.getElementById('mapping-fields');
+  container.innerHTML = FIELD_DEFS.map(field => `
+    <div class="form-group">
+      <label class="form-label">
+        ${field.label} ${field.required ? '<span style="color:var(--danger);">*</span>' : ''}
+      </label>
+      <select class="form-select" id="map-${field.key}" onchange="mappings['${field.key}']=this.value===''?null:parseInt(this.value)">
+        <option value="">— Not mapped —</option>
+        ${columnHeaders.map((h, i) =>
+          `<option value="${i}" ${mappings[field.key] === i ? 'selected' : ''}>${h || `Column ${i+1}`}</option>`
+        ).join('')}
+      </select>
+      ${mappings[field.key] !== undefined
+        ? `<div style="font-size:11px;color:var(--success);margin-top:3px;">✅ Auto-matched to "${columnHeaders[mappings[field.key]]}"</div>`
+        : field.required ? `<div style="font-size:11px;color:var(--danger);margin-top:3px;">⚠ Required — please map this</div>` : ''}
+    </div>`).join('');
+}
+
+function previewData() {
+  // Read current mappings from selects
+  FIELD_DEFS.forEach(f => {
+    const sel = document.getElementById(`map-${f.key}`);
+    mappings[f.key] = sel.value === '' ? null : parseInt(sel.value);
+  });
+
+  if (mappings.project_code === null || mappings.project_code === undefined) {
+    showToast('Project Code / WO column is required', 'error');
+    return;
+  }
+
+  renderPreview();
+  goToStep(3);
+}
+
+function renderPreview() {
+  const thead = document.getElementById('preview-thead');
+  const tbody = document.getElementById('preview-tbody');
+
+  // Build mapped rows
+  const mapped = parsedData.map(row => {
+    const r = {};
+    FIELD_DEFS.forEach(f => {
+      r[f.key] = mappings[f.key] !== null && mappings[f.key] !== undefined
+        ? cleanValue(row[mappings[f.key]], f.key) : '';
+    });
+    r._raw_code = r.project_code;
+    r._isDuplicate = existingCodes.has((r.project_code || '').trim().toUpperCase());
+    r._isEmpty = !r.project_code;
+    return r;
+  });
+
+  const newCount = mapped.filter(r => !r._isDuplicate && !r._isEmpty).length;
+  const dupCount = mapped.filter(r => r._isDuplicate).length;
+  const emptyCount = mapped.filter(r => r._isEmpty).length;
+
+  document.getElementById('preview-summary').innerHTML = `
+    <span class="badge-new">✅ ${newCount} New</span>
+    <span class="badge-dup">⚠ ${dupCount} Duplicates</span>
+    ${emptyCount > 0 ? `<span class="badge-err">❌ ${emptyCount} Empty</span>` : ''}`;
+
+  document.getElementById('import-btn').textContent = `✅ Import ${newCount} Projects`;
+
+  thead.innerHTML = `<th>#</th><th>Status</th>` +
+    FIELD_DEFS.map(f => `<th>${f.label}</th>`).join('');
+
+  tbody.innerHTML = mapped.map((r, i) => {
+    const rowClass = r._isDuplicate ? 'duplicate' : r._isEmpty ? 'error-row' : '';
+    const badge = r._isDuplicate
+      ? '<span class="badge-dup">Duplicate</span>'
+      : r._isEmpty ? '<span class="badge-err">Empty</span>'
+      : '<span class="badge-new">New</span>';
+    return `<tr class="${rowClass}">
+      <td>${i + 1}</td>
+      <td>${badge}</td>
+      ${FIELD_DEFS.map(f => `<td>${r[f.key] || '—'}</td>`).join('')}
+    </tr>`;
+  }).join('');
+
+  // Store for import
+  window._mappedRows = mapped;
+}
+
+function cleanValue(val, fieldKey) {
+  if (val === null || val === undefined || val === '') return '';
+  const s = String(val).trim();
+  if (s === 'NaN' || s === 'undefined' || s === '-' || s === 'NaT') return '';
+
+  // Date fields
+  if (['cdd', 'edd', 'po_date'].includes(fieldKey)) {
+    // Try to parse as date
+    if (s.match(/^\d{4}-\d{2}-\d{2}/)) return s.substring(0, 10);
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    return '';
+  }
+
+  // Status field - map to our status values
+  if (fieldKey === 'status') {
+    const sl = s.toLowerCase();
+    if (sl.includes('closed') || sl.includes('complet') || sl.includes('dispatc')) return 'completed';
+    if (sl.includes('hold')) return 'on_hold';
+    if (sl.includes('cancel')) return 'cancelled';
+    return 'active';
+  }
+
+  return s;
+}
+
+async function runImport() {
+  const rows = window._mappedRows;
+  if (!rows) return;
+
+  const skipDups = document.getElementById('skip-duplicates').checked;
+  const toImport = rows.filter(r => !r._isEmpty && (!skipDups || !r._isDuplicate));
+
+  if (!toImport.length) {
+    showToast('No rows to import after filters', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('import-btn');
+  btn.disabled = true;
+  btn.textContent = 'Importing...';
+  goToStep(4);
+
+  const log = document.getElementById('import-log');
+  log.innerHTML = `<div class="log-info">Starting import of ${toImport.length} projects...</div>`;
+
+  let imported = 0, skipped = 0, errors = 0;
+
+  for (const row of toImport) {
+    try {
+      // Build project object - only include non-empty values
+      const projectData = { project_code: row.project_code };
+      if (row.project_name) projectData.project_name = row.project_name;
+      else projectData.project_name = row.project_code; // fallback
+      if (row.customer_name) projectData.customer_name = row.customer_name;
+      if (row.project_engineer) projectData.project_engineer = row.project_engineer;
+      if (row.cdd) projectData.cdd = row.cdd;
+      if (row.edd) projectData.edd = row.edd;
+      if (row.po_date) projectData.po_date = row.po_date;
+      if (row.status) projectData.status = row.status;
+      else projectData.status = 'active';
+
+      if (row._isDuplicate) {
+        // Update existing
+        const existing = await db.from('projects').select('id').eq('project_code', row.project_code).single();
+        if (existing.data) {
+          await updateProject(existing.data.id, projectData);
+          log.innerHTML += `<div class="log-skip">↻ Updated: ${row.project_code}</div>`;
+        }
+      } else {
+        await createProject(projectData);
+        log.innerHTML += `<div class="log-ok">✅ Imported: ${row.project_code} — ${projectData.project_name}</div>`;
+        imported++;
+      }
+
+      // Auto scroll log
+      log.scrollTop = log.scrollHeight;
+    } catch(err) {
+      log.innerHTML += `<div class="log-err">❌ Error: ${row.project_code} — ${err.message}</div>`;
+      errors++;
+    }
+  }
+
+  log.innerHTML += `<div class="log-info" style="margin-top:8px;border-top:1px solid #334155;padding-top:8px;">
+    Done! ✅ ${imported} imported  ⚠ ${skipped} skipped  ❌ ${errors} errors
+  </div>`;
+
+  document.getElementById('done-summary').innerHTML =
+    `<strong style="color:#10b981;">${imported} projects imported</strong> successfully.
+    ${errors > 0 ? `<strong style="color:#ef4444;">${errors} errors</strong>.` : ''}`;
+}
+
+function goToStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const panel = document.getElementById(`panel-${i}`);
+    const step = document.getElementById(`step-${i}`);
+    panel.style.display = i === n ? 'block' : 'none';
+    step.className = 'step' + (i === n ? ' active' : i < n ? ' done' : '');
+  }
+}
+
+function resetImport() {
+  parsedData = []; columnHeaders = []; mappings = {};
+  document.getElementById('file-input').value = '';
+  goToStep(1);
+}
+
+init();
+</script>
+</body>
+</html>
