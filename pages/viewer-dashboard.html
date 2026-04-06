@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viewer Dashboard – Project Tracker</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+</head>
+<body>
+<div id="nav-root"></div>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Projects Overview</div>
+      <div class="page-subtitle" id="greeting">Read-only view</div>
+    </div>
+    <span style="background:#f3f4f6;border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text-muted);">👁 Viewer — Read Only</span>
+  </div>
+
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+    <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;">📋</div><div><div class="stat-value" id="s-total">–</div><div class="stat-label">Total Projects</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#d1fae5;">🟢</div><div><div class="stat-value" id="s-active" style="color:#10b981;">–</div><div class="stat-label">Active</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;">🚨</div><div><div class="stat-value" id="s-delayed" style="color:#ef4444;">–</div><div class="stat-label">Delayed</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#f0fdf4;">✅</div><div><div class="stat-value" id="s-completed" style="color:#10b981;">–</div><div class="stat-label">Completed</div></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">All Projects</div>
+      <input type="text" class="search-input" id="search" placeholder="Search..." oninput="filterProjects()" style="width:200px;">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Code</th><th>Project</th><th>Customer</th><th>Engineer</th><th>CDD</th><th>EDD</th><th>Status</th><th>Progress</th></tr>
+        </thead>
+        <tbody id="projects-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let profile, allProjects=[], allTasks=[];
+const todayStr = new Date().toISOString().split('T')[0];
+
+async function init(){
+  profile = await requireAuth(['viewer','hod','admin']);
+  if(!profile)return;
+  document.getElementById('nav-root').innerHTML = renderNav(profile,'dashboard');
+  renderNotifBell('notif-container');
+  document.getElementById('greeting').textContent = `Welcome, ${profile.full_name} — Read-only view`;
+
+  const stats = await getDashboardStats();
+  document.getElementById('s-total').textContent = stats.totalProjects;
+  document.getElementById('s-active').textContent = stats.activeProjects;
+  document.getElementById('s-delayed').textContent = stats.delayedProjects;
+  document.getElementById('s-completed').textContent = stats.completedProjects;
+
+  allProjects = await getAllProjects();
+  const sets = await Promise.all(allProjects.map(p=>getTasksByProject(p.id).catch(()=>[])));
+  sets.forEach((tasks,i)=>tasks.forEach(t=>allTasks.push({...t,project_id:allProjects[i].id})));
+  filterProjects();
+}
+
+function filterProjects(){
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  const f=allProjects.filter(p=>!q||p.project_code.toLowerCase().includes(q)||p.project_name.toLowerCase().includes(q)||(p.customer_name||'').toLowerCase().includes(q));
+  renderTable(f);
+}
+
+function renderTable(projects){
+  const tbody=document.getElementById('projects-tbody');
+  if(!projects.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No projects</div></div></td></tr>`;return;}
+  tbody.innerHTML=projects.map(p=>{
+    const pt=allTasks.filter(t=>t.project_id===p.id);
+    const done=pt.filter(t=>t.status==='completed').length;
+    const pct=pt.length?Math.round(done/pt.length*100):0;
+    return`<tr class="${p.is_delayed?'row-overdue':''}">
+      <td><strong>${p.project_code}</strong></td>
+      <td>${p.project_name}</td>
+      <td>${p.customer_name||'—'}</td>
+      <td>${p.project_engineer||'—'}</td>
+      <td>${formatDate(p.cdd)}</td>
+      <td>${formatDate(p.edd)}${p.is_delayed?` <span class="badge badge-overdue">DELAYED</span>`:''}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td style="min-width:120px;">
+        <div class="progress-wrap" style="margin-bottom:2px;"><div class="progress-bar ${pct<30?'danger':pct<70?'warning':''}" style="width:${pct}%"></div></div>
+        <span style="font-size:11px;color:var(--text-muted);">${done}/${pt.length} (${pct}%)</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+init();
+</script>
+</body>
+</html>

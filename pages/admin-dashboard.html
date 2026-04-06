@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard – Project Tracker</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+</head>
+<body>
+<div id="nav-root"></div>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Admin Dashboard</div>
+      <div class="page-subtitle" id="greeting">Good morning, Admin</div>
+    </div>
+    <div class="flex flex-gap">
+      <a href="projects.html" class="btn btn-primary">➕ New Project</a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;">📋</div><div><div class="stat-value" id="s-total">–</div><div class="stat-label">Total Projects</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#d1fae5;">🟢</div><div><div class="stat-value" id="s-active">–</div><div class="stat-label">Active</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;">🚨</div><div><div class="stat-value" id="s-delayed" style="color:#ef4444;">–</div><div class="stat-label">Delayed</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#f0fdf4;">✅</div><div><div class="stat-value" id="s-completed" style="color:#10b981;">–</div><div class="stat-label">Completed</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fef3c7;">⚠️</div><div><div class="stat-value" id="s-overdue" style="color:#f59e0b;">–</div><div class="stat-label">Overdue Tasks</div></div></div>
+  </div>
+
+  <!-- Department Progress -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header"><div class="card-title">Department-wise Task Progress</div></div>
+    <div class="card-body">
+      <div id="dept-progress">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Recent Projects -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Projects Overview</div>
+      <a href="projects.html" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Project Code</th><th>Project Name</th><th>Customer</th>
+            <th>CDD</th><th>EDD</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="projects-tbody">
+          <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let profile;
+
+async function init() {
+  profile = await requireAuth(['admin']);
+  if (!profile) return;
+  
+  document.getElementById('nav-root').innerHTML = renderNav(profile, 'dashboard');
+  renderNotifBell('notif-container');
+  
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting').textContent = `${greet}, ${profile.full_name}`;
+  
+  await loadStats();
+  await loadProjects();
+}
+
+async function loadStats() {
+  const stats = await getDashboardStats();
+  document.getElementById('s-total').textContent = stats.totalProjects;
+  document.getElementById('s-active').textContent = stats.activeProjects;
+  document.getElementById('s-delayed').textContent = stats.delayedProjects;
+  document.getElementById('s-completed').textContent = stats.completedProjects;
+  document.getElementById('s-overdue').textContent = stats.overdueTasks;
+  
+  // Dept progress
+  const el = document.getElementById('dept-progress');
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
+    ${stats.deptStats.map(d => {
+      const pct = d.total ? Math.round((d.completed/d.total)*100) : 0;
+      const cls = pct < 30 ? 'danger' : pct < 70 ? 'warning' : '';
+      return `<div style="padding:4px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:600;">${d.icon} ${d.label}</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            ${d.overdue > 0 ? `<span class="badge badge-overdue">⚠ ${d.overdue} overdue</span>` : ''}
+            <span style="font-size:12px;color:var(--text-muted);">${d.completed}/${d.total}</span>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar ${cls}" style="width:${pct}%;background:${d.color};"></div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function loadProjects() {
+  const projects = await getAllProjects();
+  const tbody = document.getElementById('projects-tbody');
+  
+  if (!projects.length) {
+    tbody.innerHTML = `<tr><td colspan="7">
+      <div class="empty-state"><div class="empty-state-icon">📋</div>
+      <div class="empty-state-title">No projects yet</div>
+      <div class="empty-state-desc"><a href="projects.html" class="btn btn-primary" style="margin-top:12px;">Create First Project</a></div>
+      </div></td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = projects.slice(0, 15).map(p => `
+    <tr class="${p.is_delayed ? 'row-overdue' : ''}">
+      <td><strong>${p.project_code}</strong></td>
+      <td>${p.project_name}</td>
+      <td>${p.customer_name || '—'}</td>
+      <td>${formatDate(p.cdd)}</td>
+      <td>${formatDate(p.edd)}</td>
+      <td>
+        ${statusBadge(p.status)}
+        ${p.is_delayed ? '<span class="badge badge-overdue" style="margin-left:4px;">⚠ DELAYED</span>' : ''}
+      </td>
+      <td>
+        <a href="project-detail.html?id=${p.id}" class="btn btn-sm btn-secondary">View</a>
+      </td>
+    </tr>`).join('');
+}
+
+init();
+</script>
+</body>
+</html>

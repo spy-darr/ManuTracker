@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users – Project Tracker</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+</head>
+<body>
+<div id="nav-root"></div>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">User Management</div>
+      <div class="page-subtitle">Manage department engineers and HOD access</div>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('user-modal')">➕ Add User</button>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role / Department</th><th>Created</th></tr>
+        </thead>
+        <tbody id="users-tbody">
+          <tr><td colspan="4" style="text-align:center;padding:30px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Role Guide -->
+  <div class="card" style="margin-top:20px;">
+    <div class="card-header"><div class="card-title">Role Guide</div></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">
+        <div style="padding:12px;background:var(--bg);border-radius:8px;">
+          <div style="font-weight:700;margin-bottom:4px;">🔐 Admin (Project Admin)</div>
+          <div style="font-size:12px;color:var(--text-muted);">Full access: create projects, add tasks, set deadlines, log delays, manage users</div>
+        </div>
+        <div style="padding:12px;background:var(--bg);border-radius:8px;">
+          <div style="font-weight:700;margin-bottom:4px;">👁 HOD</div>
+          <div style="font-size:12px;color:var(--text-muted);">Read-only: all projects, department progress, delay reports, Gantt timeline</div>
+        </div>
+        <div style="padding:12px;background:var(--bg);border-radius:8px;">
+          <div style="font-weight:700;margin-bottom:4px;">👁 Viewer</div>
+          <div style="font-size:12px;color:var(--text-muted);">Basic read-only: project list and progress overview only</div>
+        </div>
+        ${DEPARTMENTS.map(d => `
+          <div style="padding:12px;background:var(--bg);border-radius:8px;border-left:3px solid ${d.color};">
+            <div style="font-weight:700;margin-bottom:4px;">${d.icon} ${d.label}</div>
+            <div style="font-size:12px;color:var(--text-muted);">Can update own tasks, log progress, mark completion</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add New User</h3>
+      <button class="modal-close" onclick="closeModal('user-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" id="u-name" class="form-input" placeholder="John Smith">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input type="email" id="u-email" class="form-input" placeholder="john@company.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <input type="password" id="u-password" class="form-input" placeholder="Min 6 characters">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role / Department *</label>
+          <select id="u-role" class="form-select">
+            <option value="">Select Role</option>
+            <option value="admin">🔐 Admin (Project Admin)</option>
+            <option value="hod">👁 HOD (Head of Department)</option>
+            <option value="viewer">👁 Viewer (Read-only)</option>
+            <optgroup label="Department Engineers">
+              ${DEPARTMENTS.map(d => `<option value="${d.id}">${d.icon} ${d.label}</option>`).join('')}
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:12px;background:#fef3c7;border-radius:8px;font-size:12px;color:#92400e;">
+        ⚠️ The new user will receive a confirmation email from Supabase. They must confirm their email before logging in.
+        You can disable email confirmation in Supabase → Authentication → Settings → "Enable email confirmations".
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('user-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-user-btn" onclick="saveUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let profile;
+
+async function init() {
+  profile = await requireAuth(['admin']);
+  if (!profile) return;
+  document.getElementById('nav-root').innerHTML = renderNav(profile, 'users');
+  renderNotifBell('notif-container');
+  await loadUsers();
+}
+
+async function loadUsers() {
+  const users = await getAllUsers();
+  const tbody = document.getElementById('users-tbody');
+  
+  if (!users.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">No users yet</div></div></td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = users.map(u => {
+    const dept = DEPARTMENTS.find(d => d.id === u.role);
+    const roleLabel = dept ? `${dept.icon} ${dept.label}` : u.role === 'admin' ? '🔐 Admin' : u.role === 'hod' ? '👁 HOD' : u.role;
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="avatar" style="background:var(--primary);">${u.full_name.charAt(0).toUpperCase()}</div>
+          <div>
+            <div style="font-weight:600;">${u.full_name}</div>
+            ${u.id === profile.id ? '<span class="badge badge-ok" style="font-size:10px;">You</span>' : ''}
+          </div>
+        </div>
+      </td>
+      <td>${u.email}</td>
+      <td><span class="badge badge-ok" style="font-size:12px;">${roleLabel}</span></td>
+      <td style="color:var(--text-muted);">${formatDate(u.created_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveUser() {
+  const name = document.getElementById('u-name').value.trim();
+  const email = document.getElementById('u-email').value.trim();
+  const password = document.getElementById('u-password').value;
+  const role = document.getElementById('u-role').value;
+  
+  if (!name || !email || !password || !role) {
+    showToast('All fields are required', 'error');
+    return;
+  }
+  if (password.length < 6) {
+    showToast('Password must be at least 6 characters', 'error');
+    return;
+  }
+  
+  const btn = document.getElementById('save-user-btn');
+  btn.textContent = 'Creating...';
+  btn.disabled = true;
+  
+  try {
+    await createUser(email, password, name, role);
+    showToast(`User "${name}" created successfully!`, 'success');
+    closeModal('user-modal');
+    document.getElementById('u-name').value = '';
+    document.getElementById('u-email').value = '';
+    document.getElementById('u-password').value = '';
+    document.getElementById('u-role').value = '';
+    await loadUsers();
+  } catch(e) {
+    showToast(e.message || 'Error creating user', 'error');
+  } finally {
+    btn.textContent = 'Create User';
+    btn.disabled = false;
+  }
+}
+
+init();
+</script>
+</body>
+</html>

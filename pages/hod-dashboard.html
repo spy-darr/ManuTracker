@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOD Dashboard – Project Tracker</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .gantt-wrap{overflow-x:auto;}
+    .gantt-table{min-width:900px;border-collapse:collapse;width:100%;}
+    .gantt-table th{background:var(--primary);color:white;padding:8px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}
+    .gantt-table td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
+    .gantt-table tr:hover td{background:#f8fafc;}
+    .gantt-section td{background:#1e3a5f;color:white;font-weight:700;font-size:12px;padding:6px 10px;}
+    .gantt-bar-cell{min-width:480px;padding:4px 6px;}
+    .gantt-month-th{background:#2563eb;text-align:center;font-size:10px;border-right:1px solid rgba(255,255,255,0.2);}
+    .gantt-bar-wrapper{position:relative;height:22px;}
+    .gantt-bar{position:absolute;height:18px;top:2px;border-radius:4px;display:flex;align-items:center;padding:0 5px;font-size:10px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;cursor:pointer;min-width:4px;}
+    .gantt-bar.completed{background:#10b981;}
+    .gantt-bar.in_progress{background:#3b82f6;}
+    .gantt-bar.pending{background:#9ca3af;}
+    .gantt-bar.delayed{background:#ef4444;animation:flash 1.5s infinite;}
+    .gantt-bar.on_hold{background:#d1d5db;}
+    .gantt-today{position:absolute;top:0;bottom:0;width:2px;background:#f59e0b;z-index:3;pointer-events:none;}
+    .gantt-tooltip{position:fixed;background:#1e293b;color:white;padding:8px 12px;border-radius:8px;font-size:12px;pointer-events:none;z-index:9999;max-width:260px;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:none;}
+    .hod-dept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+    .hod-dept-card{background:white;border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;}
+    .hod-dept-header{padding:14px 18px;font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;color:white;}
+    .hod-dept-body{padding:16px 18px;}
+    .dept-stat-row{display:flex;gap:12px;margin-bottom:12px;}
+    .dept-stat-item{flex:1;text-align:center;}
+    .dept-stat-val{font-size:22px;font-weight:800;line-height:1.1;}
+    .dept-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);}
+    .delayed-row td{background:#fff5f5;}
+    .delayed-row:hover td{background:#fee2e2!important;}
+    @keyframes pulse-red{0%,100%{opacity:1;}50%{opacity:0.6;}}
+    .pulse{animation:pulse-red 2s infinite;}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+</head>
+<body>
+<div id="nav-root"></div>
+<div class="gantt-tooltip" id="gantt-tooltip"></div>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">HOD Dashboard</div>
+      <div class="page-subtitle" id="greeting"></div>
+    </div>
+    <div class="flex flex-gap items-center">
+      <button onclick="refreshAll()" class="btn btn-secondary">🔄 Refresh</button>
+      <span id="last-updated" style="font-size:12px;color:var(--text-muted);"></span>
+    </div>
+  </div>
+  <div id="delayed-banner-wrap"></div>
+  <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:24px;">
+    <div class="stat-card" style="border-left:4px solid #3b82f6;"><div class="stat-icon" style="background:#dbeafe;">📋</div><div><div class="stat-value" id="s-total">–</div><div class="stat-label">Total Projects</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #10b981;"><div class="stat-icon" style="background:#d1fae5;">🟢</div><div><div class="stat-value" id="s-active" style="color:#10b981;">–</div><div class="stat-label">Active</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #ef4444;"><div class="stat-icon" style="background:#fee2e2;">🚨</div><div><div class="stat-value" id="s-delayed" style="color:#ef4444;">–</div><div class="stat-label">Delayed</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #10b981;"><div class="stat-icon" style="background:#f0fdf4;">✅</div><div><div class="stat-value" id="s-completed" style="color:#10b981;">–</div><div class="stat-label">Completed</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #f59e0b;"><div class="stat-icon" style="background:#fef3c7;">⚠️</div><div><div class="stat-value" id="s-overdue" style="color:#f59e0b;">–</div><div class="stat-label">Overdue Tasks</div></div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">🏠 Overview</button>
+    <button class="tab-btn" onclick="switchTab('departments',this)">🏭 Departments</button>
+    <button class="tab-btn" onclick="switchTab('gantt',this)">📅 Gantt Timeline</button>
+    <button class="tab-btn" onclick="switchTab('delayed',this)">🚨 Delayed &amp; At Risk</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="tab-pane active" id="tab-overview">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All Projects</div>
+        <div class="flex flex-gap">
+          <input type="text" class="search-input" id="proj-search" placeholder="Search..." oninput="filterProjects()" style="width:180px;">
+          <select class="form-select" id="proj-sf" onchange="filterProjects()" style="width:auto;">
+            <option value="">All Status</option><option value="active">Active</option>
+            <option value="delayed">Delayed</option><option value="completed">Completed</option><option value="on_hold">On Hold</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>Code</th><th>Project</th><th>Customer</th><th>Engineer</th>
+          <th>CDD</th><th>EDD</th><th>Status</th><th>Progress</th><th>Detail</th>
+        </tr></thead><tbody id="overview-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPARTMENTS -->
+  <div class="tab-pane" id="tab-departments">
+    <div class="hod-dept-grid" id="dept-grid">Loading...</div>
+  </div>
+
+  <!-- GANTT -->
+  <div class="tab-pane" id="tab-gantt">
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-body" style="padding:12px 18px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;gap:6px;align-items:center;"><span style="width:12px;height:12px;border-radius:2px;background:#10b981;display:inline-block;"></span><span style="font-size:12px;">Completed</span></div>
+          <div style="display:flex;gap:6px;align-items:center;"><span style="width:12px;height:12px;border-radius:2px;background:#3b82f6;display:inline-block;"></span><span style="font-size:12px;">In Progress</span></div>
+          <div style="display:flex;gap:6px;align-items:center;"><span style="width:12px;height:12px;border-radius:2px;background:#9ca3af;display:inline-block;"></span><span style="font-size:12px;">Pending</span></div>
+          <div style="display:flex;gap:6px;align-items:center;"><span style="width:12px;height:12px;border-radius:2px;background:#ef4444;display:inline-block;"></span><span style="font-size:12px;">Overdue</span></div>
+          <div style="display:flex;gap:6px;align-items:center;"><span style="width:3px;height:14px;background:#f59e0b;display:inline-block;"></span><span style="font-size:12px;">Today</span></div>
+          <div style="margin-left:auto;display:flex;gap:10px;align-items:center;">
+            <label style="font-size:12px;font-weight:600;">Range:</label>
+            <select id="gantt-range" class="form-select" style="width:auto;" onchange="renderGantt()">
+              <option value="3">3 Months</option><option value="6" selected>6 Months</option><option value="12">12 Months</option>
+            </select>
+            <label style="font-size:12px;font-weight:600;">Dept:</label>
+            <select id="gantt-dept" class="form-select" style="width:auto;" onchange="renderGantt()">
+              <option value="">All Depts</option>
+            </select>
+            <label style="font-size:12px;font-weight:600;">Project:</label>
+            <select id="gantt-proj" class="form-select" style="width:auto;" onchange="renderGantt()">
+              <option value="">All Projects</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card"><div class="gantt-wrap"><div id="gantt-container">Loading...</div></div></div>
+  </div>
+
+  <!-- DELAYED -->
+  <div class="tab-pane" id="tab-delayed">
+    <div id="delayed-wrap">Loading...</div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <div>
+        <h3 id="detail-title">Project Details</h3>
+        <div id="detail-meta" style="font-size:12px;color:var(--text-muted);margin-top:2px;"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('detail-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="detail-body">Loading...</div>
+  </div>
+</div>
+
+<script>
+let profile, allProjects=[], allTasks=[], ganttData=[];
+const today=new Date(); today.setHours(0,0,0,0);
+const todayStr=today.toISOString().split('T')[0];
+
+async function init(){
+  profile=await requireAuth(['hod','admin','viewer']);
+  if(!profile)return;
+  document.getElementById('nav-root').innerHTML=renderNav(profile,'dashboard');
+  renderNotifBell('notif-container');
+  const h=today.getHours();
+  document.getElementById('greeting').textContent=`${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, ${profile.full_name} — ${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
+  // Populate dept filter
+  const gd=document.getElementById('gantt-dept');
+  DEPARTMENTS.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=`${d.icon} ${d.label}`;gd.appendChild(o);});
+  await refreshAll();
+  setInterval(refreshAll,60000);
+}
+
+async function refreshAll(){
+  const [stats,projects]=await Promise.all([getDashboardStats(),getAllProjects()]);
+  allProjects=projects;
+  document.getElementById('s-total').textContent=stats.totalProjects;
+  document.getElementById('s-active').textContent=stats.activeProjects;
+  document.getElementById('s-delayed').textContent=stats.delayedProjects;
+  document.getElementById('s-completed').textContent=stats.completedProjects;
+  document.getElementById('s-overdue').textContent=stats.overdueTasks;
+  document.getElementById('last-updated').textContent=`Updated: ${new Date().toLocaleTimeString()}`;
+
+  const db=document.getElementById('delayed-banner-wrap');
+  db.innerHTML=stats.delayedProjects>0
+    ?`<div class="delayed-banner" style="margin-bottom:20px;">🚨 <strong>${stats.delayedProjects} project${stats.delayedProjects>1?'s are':' is'} DELAYED</strong><button onclick="switchTabByName('delayed')" style="margin-left:auto;background:var(--danger);color:white;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;">View Delayed ›</button></div>`:'';
+
+  // Load all tasks
+  const sets=await Promise.all(allProjects.map(p=>getTasksByProject(p.id).catch(()=>[])));
+  allTasks=[];
+  sets.forEach((tasks,i)=>tasks.forEach(t=>allTasks.push({...t,projectCode:allProjects[i].project_code,projectName:allProjects[i].project_name})));
+  ganttData=sets.map((tasks,i)=>({project:allProjects[i],tasks}));
+
+  // Populate project filter for gantt
+  const gp=document.getElementById('gantt-proj');
+  gp.innerHTML='<option value="">All Projects</option>'+allProjects.map(p=>`<option value="${p.id}">${p.project_code}</option>`).join('');
+
+  filterProjects();
+  renderDeptGrid(stats.deptStats);
+  renderDelayedTab();
+  if(document.getElementById('tab-gantt').classList.contains('active'))renderGantt();
+}
+
+function filterProjects(){
+  const q=(document.getElementById('proj-search')?.value||'').toLowerCase();
+  const s=document.getElementById('proj-sf')?.value||'';
+  const f=allProjects.filter(p=>(!q||p.project_code.toLowerCase().includes(q)||p.project_name.toLowerCase().includes(q)||(p.customer_name||'').toLowerCase().includes(q))&&(!s||p.status===s));
+  renderOverview(f);
+}
+
+function renderOverview(projects){
+  const tbody=document.getElementById('overview-tbody');
+  if(!projects.length){tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No projects found</div></div></td></tr>`;return;}
+  tbody.innerHTML=projects.map(p=>{
+    const pt=allTasks.filter(t=>t.project_id===p.id);
+    const done=pt.filter(t=>t.status==='completed').length;
+    const pct=pt.length?Math.round(done/pt.length*100):0;
+    const isOv=p.edd&&p.edd<todayStr&&p.status!=='completed';
+    return`<tr class="${p.is_delayed?'delayed-row':''}">
+      <td><strong style="${p.is_delayed?'color:var(--danger);':''}">${p.is_delayed?'🚨 ':''}${p.project_code}</strong></td>
+      <td>${p.project_name}</td><td>${p.customer_name||'—'}</td><td>${p.project_engineer||'—'}</td>
+      <td>${formatDate(p.cdd)}</td>
+      <td>${formatDate(p.edd)}${isOv?` ${deadlineBadge(p.edd,p.status)}`:''}</td>
+      <td>${statusBadge(p.status)}${p.is_delayed?'<br><span class="badge badge-overdue pulse">DELAYED</span>':''}</td>
+      <td style="min-width:130px;">
+        <div class="progress-wrap" style="margin-bottom:3px;"><div class="progress-bar ${pct<30?'danger':pct<70?'warning':''}" style="width:${pct}%"></div></div>
+        <span style="font-size:11px;color:var(--text-muted);">${done}/${pt.length} (${pct}%)</span>
+      </td>
+      <td><button onclick="viewDetail('${p.id}')" class="btn btn-sm btn-secondary">📋 View</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDeptGrid(deptStats){
+  document.getElementById('dept-grid').innerHTML=deptStats.map(d=>{
+    const pct=d.total?Math.round(d.completed/d.total*100):0;
+    const pending=Math.max(0,d.total-d.completed-d.overdue);
+    const ovTasks=allTasks.filter(t=>t.department===d.id&&t.status!=='completed'&&(t.revised_deadline||t.deadline)<todayStr).slice(0,3);
+    return`<div class="hod-dept-card">
+      <div class="hod-dept-header" style="background:${d.color};">
+        <span style="font-size:20px;">${d.icon}</span><span>${d.label}</span>
+        ${d.overdue>0?`<span style="margin-left:auto;background:rgba(0,0,0,0.25);border-radius:20px;padding:2px 8px;font-size:11px;">⚠ ${d.overdue}</span>`:''}
+      </div>
+      <div class="hod-dept-body">
+        <div class="dept-stat-row">
+          <div class="dept-stat-item"><div class="dept-stat-val">${d.total}</div><div class="dept-stat-lbl">Total</div></div>
+          <div class="dept-stat-item"><div class="dept-stat-val" style="color:#10b981;">${d.completed}</div><div class="dept-stat-lbl">Done</div></div>
+          <div class="dept-stat-item"><div class="dept-stat-val" style="color:#f59e0b;">${pending}</div><div class="dept-stat-lbl">Pending</div></div>
+          <div class="dept-stat-item"><div class="dept-stat-val" style="color:#ef4444;">${d.overdue}</div><div class="dept-stat-lbl">Overdue</div></div>
+        </div>
+        <div class="progress-wrap" style="margin-bottom:6px;"><div class="progress-bar" style="width:${pct}%;background:${d.color};"></div></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${pct}% complete</div>
+        ${d.overdue>0
+          ?`<div style="background:#fff5f5;border-radius:6px;padding:8px;border:1px solid #fca5a5;">
+              <div style="font-size:11px;font-weight:700;color:var(--danger);margin-bottom:4px;">Overdue Tasks:</div>
+              ${ovTasks.map(t=>`<div style="font-size:11px;padding:2px 0;border-bottom:1px solid #fee2e2;color:#991b1b;">⚠ ${t.task_name} <span style="color:var(--text-muted);">(${t.projectCode})</span></div>`).join('')}
+              ${d.overdue>3?`<div style="font-size:11px;color:var(--danger);">+${d.overdue-3} more</div>`:''}
+            </div>`
+          :`<div style="background:#f0fdf4;border-radius:6px;padding:8px;text-align:center;font-size:12px;color:#059669;font-weight:600;">✅ All on track</div>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderGantt(){
+  const months=parseInt(document.getElementById('gantt-range').value)||6;
+  const deptF=document.getElementById('gantt-dept').value;
+  const projF=document.getElementById('gantt-proj').value;
+  const container=document.getElementById('gantt-container');
+  if(!ganttData.length){container.innerHTML='<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-title">No data</div></div>';return;}
+
+  const rangeStart=new Date(today); rangeStart.setMonth(rangeStart.getMonth()-1); rangeStart.setDate(1);
+  const rangeEnd=new Date(rangeStart); rangeEnd.setMonth(rangeEnd.getMonth()+months);
+  const totalMs=rangeEnd-rangeStart;
+
+  // Build month headers
+  const mHeaders=[];
+  let c=new Date(rangeStart);
+  while(c<rangeEnd){
+    const nxt=new Date(c.getFullYear(),c.getMonth()+1,1);
+    const segEnd=nxt<rangeEnd?nxt:rangeEnd;
+    const w=Math.round((segEnd-c)/totalMs*100);
+    mHeaders.push({label:c.toLocaleDateString('en-IN',{month:'short',year:'2-digit'}),w:Math.max(1,w)});
+    c=nxt;
+  }
+
+  const todayPct=Math.max(0,Math.min(100,(today-rangeStart)/totalMs*100));
+  function d2p(d){if(!d)return null;const dt=new Date(d);dt.setHours(0,0,0,0);return Math.max(0,Math.min(100,(dt-rangeStart)/totalMs*100));}
+
+  let html=`<table class="gantt-table"><thead>
+    <tr>
+      <th style="width:110px;">Project</th>
+      <th style="width:150px;">Task</th>
+      <th style="width:85px;">Dept</th>
+      <th style="width:80px;">Deadline</th>
+      <th style="width:80px;">Status</th>
+      <th class="gantt-bar-cell">
+        <div style="display:flex;height:24px;">${mHeaders.map(m=>`<div style="flex:${m.w};text-align:center;font-size:10px;padding-top:5px;border-right:1px solid rgba(255,255,255,0.2);">${m.label}</div>`).join('')}</div>
+      </th>
+    </tr></thead><tbody>`;
+
+  let rowCount=0;
+  ganttData.forEach(({project,tasks})=>{
+    if(projF&&project.id!==projF)return;
+    let filtered=deptF?tasks.filter(t=>t.department===deptF):tasks;
+    if(!filtered.length)return;
+    rowCount+=filtered.length;
+    html+=`<tr class="gantt-section"><td colspan="6">${project.project_code} — ${project.project_name}${project.is_delayed?' 🚨':''}</td></tr>`;
+    filtered.forEach(task=>{
+      const dept=DEPARTMENTS.find(d=>d.id===task.department);
+      const dl=task.revised_deadline||task.deadline;
+      const isOv=task.status!=='completed'&&dl<todayStr;
+      const st=isOv?'delayed':task.status;
+      const ep=d2p(dl);
+      const sp=Math.max(0,(ep||0)-8); // 8% width = ~2-3 weeks visual
+      const bw=Math.max(0.8,(ep||0)-sp);
+      html+=`<tr>
+        <td style="font-size:11px;font-weight:600;">${project.project_code}</td>
+        <td style="font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${task.task_name}">${task.task_name}</td>
+        <td>${dept?`<span style="font-size:11px;font-weight:700;color:${dept.color};">${dept.icon} ${dept.label.substring(0,4)}.</span>`:'—'}</td>
+        <td style="font-size:11px;white-space:nowrap;">${formatDate(dl)}</td>
+        <td>${statusBadge(st)}</td>
+        <td class="gantt-bar-cell"><div class="gantt-bar-wrapper">
+          <div class="gantt-today" style="left:${todayPct}%;"></div>
+          ${ep!==null?`<div class="gantt-bar ${st}" style="left:${sp}%;width:${bw}%;"
+            onmouseenter="showTip(event,'${task.task_name.replace(/'/g,"&#39;")}','${formatDate(dl)}','${st}')"
+            onmouseleave="hideTip()">
+            ${bw>10?task.task_name.substring(0,16):''}</div>`:
+            `<span style="font-size:10px;color:var(--text-muted);">outside range</span>`}
+        </div></td>
+      </tr>`;
+    });
+  });
+
+  if(rowCount===0){html+='<tr><td colspan="6"><div class="empty-state" style="padding:30px;"><div class="empty-state-icon">📅</div><div class="empty-state-title">No tasks match filters</div></div></td></tr>';}
+  html+='</tbody></table>';
+  container.innerHTML=html;
+}
+
+function showTip(e,name,date,status){
+  const t=document.getElementById('gantt-tooltip');
+  t.innerHTML=`<strong>${name}</strong><br>Deadline: ${date}<br>Status: ${status.replace('_',' ').toUpperCase()}`;
+  t.style.display='block';
+  t.style.left=(e.clientX+14)+'px'; t.style.top=(e.clientY-10)+'px';
+}
+function hideTip(){document.getElementById('gantt-tooltip').style.display='none';}
+document.addEventListener('mousemove',e=>{
+  const t=document.getElementById('gantt-tooltip');
+  if(t.style.display==='block'){t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-10)+'px';}
+});
+
+async function renderDelayedTab(){
+  const el=document.getElementById('delayed-wrap');
+  const delayed=allProjects.filter(p=>p.is_delayed||p.status==='delayed');
+  if(!delayed.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">No delayed projects</div><div class="empty-state-desc">All projects are on track!</div></div>`;
+    return;
+  }
+  el.innerHTML=delayed.map(p=>{
+    const pt=allTasks.filter(t=>t.project_id===p.id);
+    const ovT=pt.filter(t=>t.status!=='completed'&&(t.revised_deadline||t.deadline)<todayStr);
+    const done=pt.filter(t=>t.status==='completed').length;
+    const pct=pt.length?Math.round(done/pt.length*100):0;
+    return`<div class="card" style="margin-bottom:16px;border-left:4px solid var(--danger);">
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+          <div>
+            <div style="font-size:17px;font-weight:800;color:var(--danger);" class="pulse">🚨 ${p.project_code} — ${p.project_name}</div>
+            <div style="margin-top:4px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);">
+              <span>👤 ${p.project_engineer||'—'}</span><span>🏢 ${p.customer_name||'—'}</span>
+              <span>📅 CDD: ${formatDate(p.cdd)}</span>
+              <span>📅 EDD: <strong style="color:var(--danger);">${formatDate(p.edd)}</strong></span>
+            </div>
+            ${p.delay_reason?`<div style="margin-top:6px;font-size:12px;background:#fff5f5;padding:6px 10px;border-radius:6px;color:#991b1b;border:1px solid #fca5a5;">📝 <strong>Reason:</strong> ${p.delay_reason}</div>`:''}
+          </div>
+          <button onclick="viewDetail('${p.id}')" class="btn btn-danger btn-sm">📋 Full Detail</button>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:center;margin-bottom:14px;">
+          <div>
+            <div class="progress-wrap" style="margin-bottom:4px;"><div class="progress-bar danger" style="width:${pct}%"></div></div>
+            <div style="font-size:11px;color:var(--text-muted);">${done}/${pt.length} tasks (${pct}%)</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${DEPARTMENTS.map(dept=>{
+              const dt=pt.filter(t=>t.department===dept.id);
+              if(!dt.length)return'';
+              const dd=dt.filter(t=>t.status==='completed').length;
+              const do2=dt.filter(t=>t.status!=='completed'&&(t.revised_deadline||t.deadline)<todayStr).length;
+              return`<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:${do2>0?'#fee2e2':dd===dt.length?'#d1fae5':'#f3f4f6'};color:${do2>0?'#991b1b':dd===dt.length?'#065f46':'#374151'};">
+                ${dept.icon} ${dd}/${dt.length}${do2>0?` ⚠${do2}`:''}
+              </span>`;
+            }).join('')}
+          </div>
+        </div>
+        ${ovT.length>0?`<div style="background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;padding:12px;">
+          <div style="font-weight:700;color:var(--danger);margin-bottom:8px;font-size:13px;">Overdue Tasks (${ovT.length}):</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;">
+            ${ovT.map(t=>{
+              const dept=DEPARTMENTS.find(d=>d.id===t.department);
+              const dOver=Math.ceil((today-new Date(t.revised_deadline||t.deadline))/86400000);
+              return`<div style="background:white;border:1px solid #fca5a5;border-radius:6px;padding:8px 10px;">
+                <div style="font-weight:600;font-size:12px;">${t.task_name}</div>
+                <div style="margin-top:3px;display:flex;gap:8px;font-size:11px;color:var(--text-muted);">
+                  <span style="color:${dept?.color||'#666'};">${dept?.icon||''} ${dept?.label||t.department}</span>
+                  <span class="badge badge-overdue">${dOver}d overdue</span>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function viewDetail(projectId){
+  const proj=allProjects.find(p=>p.id===projectId);
+  if(!proj)return;
+  document.getElementById('detail-title').textContent=`${proj.project_code} — ${proj.project_name}`;
+  document.getElementById('detail-meta').textContent=`Customer: ${proj.customer_name||'—'} | Engineer: ${proj.project_engineer||'—'} | CDD: ${formatDate(proj.cdd)} | EDD: ${formatDate(proj.edd)}`;
+  document.getElementById('detail-body').innerHTML='Loading...';
+  openModal('detail-modal');
+  const [tasks,delayLogs]=await Promise.all([getTasksByProject(projectId),getDelayLog(projectId)]);
+  const byDept={};
+  DEPARTMENTS.forEach(d=>byDept[d.id]=[]);
+  tasks.forEach(t=>{if(byDept[t.department])byDept[t.department].push(t);});
+  document.getElementById('detail-body').innerHTML=`
+    ${proj.is_delayed?`<div class="delayed-banner" style="margin-bottom:16px;">🚨 This project is currently DELAYED</div>`:''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;background:var(--bg);border-radius:8px;padding:14px;margin-bottom:20px;">
+      <div><div class="form-label">Status</div>${statusBadge(proj.status)}</div>
+      <div><div class="form-label">PO Date</div>${formatDate(proj.po_date)}</div>
+      <div><div class="form-label">CDD</div>${formatDate(proj.cdd)}</div>
+      <div><div class="form-label">EDD</div>${formatDate(proj.edd)}</div>
+    </div>
+    <div class="hod-dept-grid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr));margin-bottom:20px;">
+      ${DEPARTMENTS.map(dept=>{
+        const dt=byDept[dept.id];
+        if(!dt.length)return`<div class="hod-dept-card" style="opacity:0.4;"><div class="hod-dept-header" style="background:${dept.color};">${dept.icon} ${dept.label}<span style="margin-left:auto;font-size:10px;">No tasks</span></div></div>`;
+        const done=dt.filter(t=>t.status==='completed').length;
+        const ov=dt.filter(t=>t.status!=='completed'&&(t.revised_deadline||t.deadline)<todayStr).length;
+        const pct=Math.round(done/dt.length*100);
+        return`<div class="hod-dept-card">
+          <div class="hod-dept-header" style="background:${dept.color};">${dept.icon} ${dept.label}<span style="margin-left:auto;">${done}/${dt.length}</span>${ov>0?`<span class="badge" style="background:rgba(0,0,0,0.3);color:white;">⚠${ov}</span>`:''}</div>
+          <div class="hod-dept-body">
+            <div class="progress-wrap" style="margin-bottom:8px;"><div class="progress-bar" style="width:${pct}%;background:${dept.color};"></div></div>
+            ${dt.map(t=>{const isOv=t.status!=='completed'&&(t.revised_deadline||t.deadline)<todayStr;return`<div style="padding:5px 0;border-bottom:1px solid var(--border);">
+              <div style="display:flex;justify-content:space-between;gap:4px;align-items:center;">
+                <span style="font-size:11px;font-weight:600;${isOv?'color:var(--danger);':''}">${t.task_name}</span>
+                ${statusBadge(isOv?'delayed':t.status)}
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);">📅 ${formatDate(t.revised_deadline||t.deadline)}</div>
+            </div>`;}).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    ${delayLogs.length>0?`<div style="font-weight:700;margin-bottom:10px;font-size:14px;">📅 Delay History</div><div class="timeline">${delayLogs.map(l=>`<div class="timeline-item"><div class="timeline-dot" style="background:var(--warning);"></div><div class="timeline-content"><div style="font-weight:600;">EDD: ${formatDate(l.old_edd)} → ${formatDate(l.new_edd)}</div><div style="font-size:12px;margin-top:2px;">${l.reason}</div>${l.delayed_by_department?`<div style="margin-top:4px;">${deptBadge(l.delayed_by_department)}</div>`:''}<div class="timeline-time">${l.changer?.full_name||'Admin'} • ${formatDate(l.created_at)}</div></div></div>`).join('')}</div>`:''}`;
+}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if(name==='gantt')renderGantt();
+}
+function switchTabByName(name){const btn=document.querySelector(`.tab-btn[onclick*="'${name}'"]`);if(btn)switchTab(name,btn);}
+
+init();
+</script>
+</body>
+</html>

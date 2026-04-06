@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects – Project Tracker</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+</head>
+<body>
+<div id="nav-root"></div>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Projects</div>
+      <div class="page-subtitle">Manage all manufacturing projects</div>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('project-modal')">➕ New Project</button>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" class="search-input" id="search" placeholder="Search projects..." oninput="filterProjects()">
+    <select class="form-select" id="status-filter" onchange="filterProjects()" style="width:auto;">
+      <option value="">All Status</option>
+      <option value="active">Active</option>
+      <option value="delayed">Delayed</option>
+      <option value="completed">Completed</option>
+      <option value="on_hold">On Hold</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Project Code</th><th>Project Name</th><th>Customer</th>
+            <th>Engineer</th><th>PO Date</th><th>CDD</th><th>EDD</th>
+            <th>Status</th><th>Progress</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="projects-tbody">
+          <tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Project Modal -->
+<div class="modal-overlay" id="project-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">New Project</h3>
+      <button class="modal-close" onclick="closeModal('project-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Project Code *</label>
+          <input type="text" id="f-code" class="form-input" placeholder="P-222001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Project Name *</label>
+          <input type="text" id="f-name" class="form-input" placeholder="Heat Exchanger">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Customer Name</label>
+          <input type="text" id="f-customer" class="form-input" placeholder="ALIPL">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Project Engineer</label>
+          <input type="text" id="f-engineer" class="form-input" placeholder="JSU">
+        </div>
+        <div class="form-group">
+          <label class="form-label">PO Date</label>
+          <input type="date" id="f-po-date" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CDD (Customer Delivery Date)</label>
+          <input type="date" id="f-cdd" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">EDD (Expected Delivery Date)</label>
+          <input type="date" id="f-edd" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="f-status" class="form-select">
+            <option value="active">Active</option>
+            <option value="on_hold">On Hold</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('project-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let profile, allProjects = [], editingId = null;
+
+async function init() {
+  profile = await requireAuth(['admin']);
+  if (!profile) return;
+  document.getElementById('nav-root').innerHTML = renderNav(profile, 'projects');
+  renderNotifBell('notif-container');
+  await loadProjects();
+}
+
+async function loadProjects() {
+  allProjects = await getAllProjects();
+  renderTable(allProjects);
+}
+
+function renderTable(projects) {
+  const tbody = document.getElementById('projects-tbody');
+  if (!projects.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No projects found</div></div></td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = projects.map(p => {
+    return `
+    <tr class="${p.is_delayed ? 'row-overdue' : ''}">
+      <td><strong>${p.project_code}</strong></td>
+      <td>${p.project_name}</td>
+      <td>${p.customer_name || '—'}</td>
+      <td>${p.project_engineer || '—'}</td>
+      <td>${formatDate(p.po_date)}</td>
+      <td>${formatDate(p.cdd)}</td>
+      <td>
+        ${formatDate(p.edd)}
+        ${p.is_delayed ? '<br><span class="badge badge-overdue">⚠ DELAYED</span>' : ''}
+      </td>
+      <td>${statusBadge(p.status)}</td>
+      <td>
+        <div class="flex items-center flex-gap">
+          <div id="prog-${p.id}" style="width:80px;">...</div>
+        </div>
+      </td>
+      <td>
+        <div class="flex flex-gap">
+          <a href="project-detail.html?id=${p.id}" class="btn btn-sm btn-secondary">📋 Details</a>
+          <button onclick="editProject('${p.id}')" class="btn btn-sm btn-secondary">✏️</button>
+          <button onclick="deleteProj('${p.id}')" class="btn btn-sm btn-secondary" style="color:var(--danger)">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  
+  // Load progress async
+  projects.forEach(p => loadProgress(p.id));
+}
+
+async function loadProgress(projectId) {
+  try {
+    const tasks = await getTasksByProject(projectId);
+    const total = tasks.length;
+    const done = tasks.filter(t => t.status === 'completed').length;
+    const pct = total ? Math.round((done/total)*100) : 0;
+    const el = document.getElementById(`prog-${projectId}`);
+    if (el) el.innerHTML = `
+      <div class="progress-wrap" style="margin-bottom:2px;">
+        <div class="progress-bar ${pct<30?'danger':pct<70?'warning':''}" style="width:${pct}%"></div>
+      </div>
+      <span style="font-size:11px;color:var(--text-muted);">${done}/${total} tasks</span>`;
+  } catch(e) {}
+}
+
+function filterProjects() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const s = document.getElementById('status-filter').value;
+  const filtered = allProjects.filter(p =>
+    (!q || p.project_code.toLowerCase().includes(q) || p.project_name.toLowerCase().includes(q) || (p.customer_name||'').toLowerCase().includes(q)) &&
+    (!s || p.status === s)
+  );
+  renderTable(filtered);
+}
+
+function editProject(id) {
+  const p = allProjects.find(x => x.id === id);
+  if (!p) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Edit Project';
+  document.getElementById('f-code').value = p.project_code;
+  document.getElementById('f-name').value = p.project_name;
+  document.getElementById('f-customer').value = p.customer_name || '';
+  document.getElementById('f-engineer').value = p.project_engineer || '';
+  document.getElementById('f-po-date').value = p.po_date || '';
+  document.getElementById('f-cdd').value = p.cdd || '';
+  document.getElementById('f-edd').value = p.edd || '';
+  document.getElementById('f-status').value = p.status;
+  openModal('project-modal');
+}
+
+async function saveProject() {
+  const data = {
+    project_code: document.getElementById('f-code').value.trim(),
+    project_name: document.getElementById('f-name').value.trim(),
+    customer_name: document.getElementById('f-customer').value.trim(),
+    project_engineer: document.getElementById('f-engineer').value.trim(),
+    po_date: document.getElementById('f-po-date').value || null,
+    cdd: document.getElementById('f-cdd').value || null,
+    edd: document.getElementById('f-edd').value || null,
+    status: document.getElementById('f-status').value,
+  };
+  
+  if (!data.project_code || !data.project_name) {
+    showToast('Project code and name are required', 'error');
+    return;
+  }
+  
+  try {
+    if (editingId) {
+      await updateProject(editingId, data);
+      showToast('Project updated successfully', 'success');
+    } else {
+      await createProject(data);
+      showToast('Project created successfully', 'success');
+    }
+    closeModal('project-modal');
+    editingId = null;
+    document.getElementById('modal-title').textContent = 'New Project';
+    await loadProjects();
+  } catch (e) {
+    showToast(e.message || 'Error saving project', 'error');
+  }
+}
+
+async function deleteProj(id) {
+  const p = allProjects.find(x => x.id === id);
+  confirmAction(`Delete project <strong>${p?.project_code}</strong>? This will also delete all tasks.`, async () => {
+    try {
+      await deleteProject(id);
+      showToast('Project deleted', 'success');
+      await loadProjects();
+    } catch(e) {
+      showToast(e.message, 'error');
+    }
+  });
+}
+
+// Reset modal on close
+document.getElementById('project-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal('project-modal');
+});
+
+init();
+</script>
+</body>
+</html>

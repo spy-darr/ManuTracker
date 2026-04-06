@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Tasks – Project Tracker</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+</head>
+<body>
+<div id="nav-root"></div>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title" id="page-title">My Tasks</div>
+      <div class="page-subtitle" id="page-subtitle">Your assigned department tasks</div>
+    </div>
+  </div>
+
+  <!-- Overdue Alert Banner -->
+  <div id="overdue-banner" style="display:none;"></div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="my-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;"></div>
+
+  <!-- Filter -->
+  <div class="filter-bar">
+    <select class="form-select" id="proj-filter" onchange="filterMyTasks()" style="width:auto;">
+      <option value="">All Projects</option>
+    </select>
+    <select class="form-select" id="status-filter" onchange="filterMyTasks()" style="width:auto;">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="in_progress">In Progress</option>
+      <option value="completed">Completed</option>
+      <option value="delayed">Overdue</option>
+    </select>
+    <input type="text" class="search-input" id="search" placeholder="Search tasks..." oninput="filterMyTasks()">
+  </div>
+
+  <!-- Tasks list -->
+  <div id="tasks-container">Loading...</div>
+</div>
+
+<!-- Task Update Modal -->
+<div class="modal-overlay" id="update-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="update-modal-title">Update Task</h3>
+      <button class="modal-close" onclick="closeModal('update-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="update-task-info" style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px;"></div>
+      
+      <!-- Status Change -->
+      <div class="form-grid form-grid-2" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label class="form-label">Update Status</label>
+          <select id="u-status" class="form-select">
+            <option value="">— Keep current —</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">✅ Completed</option>
+            <option value="on_hold">On Hold</option>
+          </select>
+        </div>
+        <div class="form-group" id="completion-date-group" style="display:none;">
+          <label class="form-label">Completion Date</label>
+          <input type="date" id="u-completion-date" class="form-input">
+        </div>
+      </div>
+      
+      <!-- Update Note -->
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Progress Update / Note *</label>
+        <textarea id="u-note" class="form-textarea" placeholder="Describe work done, progress, or any issues..."></textarea>
+      </div>
+      
+      <!-- Previous Updates -->
+      <div>
+        <div style="font-weight:600;margin-bottom:8px;font-size:13px;">Previous Updates</div>
+        <div id="prev-updates" style="max-height:200px;overflow-y:auto;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('update-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitUpdate()">Save Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let profile, myTasks = [], currentTaskId = null;
+
+async function init() {
+  profile = await requireAuth();
+  if (!profile) return;
+  
+  if (profile.role === 'admin') {
+    window.location.href = 'admin-dashboard.html';
+    return;
+  }
+  if (profile.role === 'hod') {
+    window.location.href = 'hod-dashboard.html';
+    return;
+  }
+  
+  const dept = DEPARTMENTS.find(d => d.id === profile.role);
+  document.getElementById('nav-root').innerHTML = renderNav(profile, 'dashboard');
+  renderNotifBell('notif-container');
+  document.getElementById('page-title').textContent = `${dept?.icon || ''} ${dept?.label || ''} Dashboard`;
+  document.getElementById('page-subtitle').textContent = `Welcome back, ${profile.full_name}`;
+  
+  document.getElementById('u-status').addEventListener('change', () => {
+    const showDate = document.getElementById('u-status').value === 'completed';
+    document.getElementById('completion-date-group').style.display = showDate ? 'block' : 'none';
+    if (showDate) document.getElementById('u-completion-date').value = new Date().toISOString().split('T')[0];
+  });
+  
+  await loadMyTasks();
+}
+
+async function loadMyTasks() {
+  myTasks = await getTasksByDept(profile.role, profile.id);
+  
+  // Populate project filter
+  const projects = [...new Set(myTasks.map(t => t.project?.project_code).filter(Boolean))];
+  const pf = document.getElementById('proj-filter');
+  projects.forEach(code => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = code;
+    pf.appendChild(opt);
+  });
+  
+  renderStats();
+  checkOverdue();
+  filterMyTasks();
+}
+
+function renderStats() {
+  const today = new Date().toISOString().split('T')[0];
+  const total = myTasks.length;
+  const completed = myTasks.filter(t => t.status === 'completed').length;
+  const overdue = myTasks.filter(t => t.status !== 'completed' && t.deadline < today).length;
+  const pending = myTasks.filter(t => t.status === 'pending').length;
+  
+  document.getElementById('my-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;">📋</div><div><div class="stat-value">${total}</div><div class="stat-label">Total Tasks</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#d1fae5;">✅</div><div><div class="stat-value" style="color:#10b981;">${completed}</div><div class="stat-label">Completed</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;">🚨</div><div><div class="stat-value" style="color:#ef4444;">${overdue}</div><div class="stat-label">Overdue</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fef3c7;">⏳</div><div><div class="stat-value" style="color:#f59e0b;">${pending}</div><div class="stat-label">Pending</div></div></div>`;
+}
+
+function checkOverdue() {
+  const today = new Date().toISOString().split('T')[0];
+  const overdue = myTasks.filter(t => t.status !== 'completed' && t.deadline < today);
+  const banner = document.getElementById('overdue-banner');
+  
+  if (overdue.length > 0) {
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+      <div class="delayed-banner">
+        🚨 You have <strong>${overdue.length} overdue task${overdue.length > 1 ? 's' : ''}</strong>!
+        Immediate attention required. Please update your task status and notify your supervisor.
+      </div>`;
+  }
+}
+
+function filterMyTasks() {
+  const proj = document.getElementById('proj-filter').value;
+  const status = document.getElementById('status-filter').value;
+  const q = document.getElementById('search').value.toLowerCase();
+  const today = new Date().toISOString().split('T')[0];
+  
+  let filtered = myTasks;
+  if (proj) filtered = filtered.filter(t => t.project?.project_code === proj);
+  if (status === 'delayed') filtered = filtered.filter(t => t.status !== 'completed' && t.deadline < today);
+  else if (status) filtered = filtered.filter(t => t.status === status);
+  if (q) filtered = filtered.filter(t => t.task_name.toLowerCase().includes(q) || (t.project?.project_name||'').toLowerCase().includes(q));
+  
+  renderTasks(filtered);
+}
+
+function renderTasks(tasks) {
+  const container = document.getElementById('tasks-container');
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (!tasks.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">No tasks found</div><div class="empty-state-desc">All clear!</div></div>`;
+    return;
+  }
+  
+  // Sort: overdue first, then by deadline
+  tasks.sort((a, b) => {
+    const aOv = a.status !== 'completed' && a.deadline < today;
+    const bOv = b.status !== 'completed' && b.deadline < today;
+    if (aOv !== bOv) return bOv ? 1 : -1;
+    return new Date(a.deadline) - new Date(b.deadline);
+  });
+  
+  container.innerHTML = `
+    <div style="display:grid;gap:14px;">
+      ${tasks.map(t => {
+        const isOverdue = t.status !== 'completed' && (t.revised_deadline || t.deadline) < today;
+        const projDelayed = t.project?.is_delayed;
+        
+        return `<div class="card" style="${isOverdue ? 'border:2px solid var(--danger);' : ''}">
+          <div class="card-body" style="${isOverdue ? 'animation:flash 3s infinite;' : ''}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                  ${isOverdue ? '<span style="font-size:18px;">🚨</span>' : ''}
+                  <span style="font-size:16px;font-weight:700;">${t.task_name}</span>
+                  ${statusBadge(t.status)}
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                  <span style="font-size:12px;color:var(--text-muted);">📁 ${t.project?.project_code || '—'} — ${t.project?.project_name || ''}</span>
+                  <span style="font-size:12px;color:var(--text-muted);">📅 Deadline: ${formatDate(t.revised_deadline || t.deadline)}</span>
+                  ${deadlineBadge(t.revised_deadline || t.deadline, t.status)}
+                  ${projDelayed ? '<span class="badge badge-overdue">Project Delayed</span>' : ''}
+                </div>
+                ${t.description ? `<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">${t.description}</div>` : ''}
+                ${t.revised_deadline && t.revised_deadline !== t.deadline ? 
+                  `<div style="margin-top:4px;font-size:12px;color:var(--warning);">⚠ Deadline was revised from ${formatDate(t.deadline)} to ${formatDate(t.revised_deadline)}</div>` : ''}
+              </div>
+              <button onclick="openUpdateModal('${t.id}')" class="btn btn-primary">
+                ${t.status === 'completed' ? '✅ Completed' : '📝 Update Status'}
+              </button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function openUpdateModal(taskId) {
+  currentTaskId = taskId;
+  const task = myTasks.find(t => t.id === taskId);
+  if (!task) return;
+  
+  document.getElementById('update-modal-title').textContent = `Update: ${task.task_name}`;
+  document.getElementById('u-status').value = '';
+  document.getElementById('u-note').value = '';
+  document.getElementById('completion-date-group').style.display = 'none';
+  
+  document.getElementById('update-task-info').innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <div><span class="form-label">Project</span><div style="font-weight:600;">${task.project?.project_code} — ${task.project?.project_name}</div></div>
+      <div><span class="form-label">Deadline</span><div>${formatDate(task.revised_deadline || task.deadline)}</div></div>
+      <div><span class="form-label">Current Status</span><div>${statusBadge(task.status)}</div></div>
+    </div>`;
+  
+  // Load previous updates
+  const updates = await getTaskUpdates(taskId);
+  document.getElementById('prev-updates').innerHTML = updates.length 
+    ? updates.map(u => `
+        <div style="padding:8px;background:var(--bg);border-radius:6px;margin-bottom:6px;">
+          <div style="font-size:13px;">${u.update_text}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">By ${u.updater?.full_name || 'You'} • ${formatDate(u.created_at)}</div>
+        </div>`).join('')
+    : '<div style="color:var(--text-muted);font-size:13px;">No previous updates</div>';
+  
+  openModal('update-modal');
+}
+
+async function submitUpdate() {
+  const note = document.getElementById('u-note').value.trim();
+  const newStatus = document.getElementById('u-status').value;
+  const completionDate = document.getElementById('u-completion-date').value;
+  
+  if (!note) {
+    showToast('Please write an update note', 'error');
+    return;
+  }
+  
+  const task = myTasks.find(t => t.id === currentTaskId);
+  
+  try {
+    // Add update log
+    await addTaskUpdate(currentTaskId, task.project_id, profile.role, note);
+    
+    // Update task status if changed
+    if (newStatus) {
+      const updates = { status: newStatus };
+      if (newStatus === 'completed' && completionDate) {
+        updates.completion_date = completionDate;
+        updates.completion_notes = note;
+      }
+      await updateTask(currentTaskId, updates);
+    }
+    
+    showToast('Update saved successfully!', 'success');
+    closeModal('update-modal');
+    await loadMyTasks();
+  } catch(e) {
+    showToast(e.message || 'Error saving update', 'error');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

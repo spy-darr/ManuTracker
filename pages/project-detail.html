@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Detail – Project Tracker</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+</head>
+<body>
+<div id="nav-root"></div>
+<div class="page-container">
+  <div style="margin-bottom:16px;">
+    <a href="projects.html" class="btn btn-secondary btn-sm">← Back to Projects</a>
+  </div>
+
+  <!-- Project Header -->
+  <div id="project-banner"></div>
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-body" id="project-info">Loading...</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tasks', this)">📋 Department Tasks</button>
+    <button class="tab-btn" onclick="switchTab('delay-log', this)">📅 Delay Log</button>
+    <button class="tab-btn" onclick="switchTab('updates', this)">💬 All Updates</button>
+  </div>
+
+  <!-- Tasks Tab -->
+  <div class="tab-pane active" id="tab-tasks">
+    <div class="page-header" style="margin-bottom:16px;">
+      <div class="filter-bar">
+        <select class="form-select" id="dept-filter" onchange="filterTasks()" style="width:auto;">
+          <option value="">All Departments</option>
+          ${DEPARTMENTS.map(d => `<option value="${d.id}">${d.icon} ${d.label}</option>`).join('')}
+        </select>
+        <select class="form-select" id="task-status-filter" onchange="filterTasks()" style="width:auto;">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="in_progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="delayed">Delayed / Overdue</option>
+        </select>
+      </div>
+      <div id="admin-task-btn"></div>
+    </div>
+
+    <!-- Department Cards -->
+    <div id="dept-tasks-container">Loading...</div>
+  </div>
+
+  <!-- Delay Log Tab -->
+  <div class="tab-pane" id="tab-delay-log">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Project Delay History</div>
+        <div id="delay-btn"></div>
+      </div>
+      <div class="card-body" id="delay-log-body">Loading...</div>
+    </div>
+  </div>
+
+  <!-- All Updates Tab -->
+  <div class="tab-pane" id="tab-updates">
+    <div class="card">
+      <div class="card-header"><div class="card-title">All Task Updates</div></div>
+      <div class="card-body" id="all-updates-body">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="task-modal-title">Add Department Task</h3>
+      <button class="modal-close" onclick="closeModal('task-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Department *</label>
+          <select id="t-dept" class="form-select">
+            <option value="">Select Department</option>
+            ${DEPARTMENTS.map(d => `<option value="${d.id}">${d.icon} ${d.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assign To</label>
+          <select id="t-assign" class="form-select">
+            <option value="">Select User</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Task Name *</label>
+          <input type="text" id="t-name" class="form-input" placeholder="e.g. GA Drawing Submission">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Description</label>
+          <textarea id="t-desc" class="form-textarea" placeholder="Task description..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deadline *</label>
+          <input type="date" id="t-deadline" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="t-status" class="form-select">
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="on_hold">On Hold</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('task-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delay Project Modal (Admin Only) -->
+<div class="modal-overlay" id="delay-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📅 Update Project EDD / Log Delay</h3>
+      <button class="modal-close" onclick="closeModal('delay-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">New EDD (Expected Delivery Date) *</label>
+          <input type="date" id="d-new-edd" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Responsible Department</label>
+          <select id="d-dept" class="form-select">
+            <option value="">—</option>
+            ${DEPARTMENTS.map(d => `<option value="${d.id}">${d.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason for Delay *</label>
+          <textarea id="d-reason" class="form-textarea" placeholder="Describe why the project is being delayed..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('delay-modal')">Cancel</button>
+      <button class="btn btn-warning" onclick="saveDelay()">Update EDD & Log Delay</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Updates Modal -->
+<div class="modal-overlay" id="updates-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="updates-modal-title">Task Updates</h3>
+      <button class="modal-close" onclick="closeModal('updates-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="updates-modal-body">Loading...</div>
+  </div>
+</div>
+
+<script>
+let profile, project, allTasks = [], editingTaskId = null;
+const projectId = new URLSearchParams(location.search).get('id');
+
+async function init() {
+  profile = await requireAuth(['admin', 'hod']);
+  if (!profile) return;
+  
+  if (!projectId) { window.location.href = 'projects.html'; return; }
+  
+  document.getElementById('nav-root').innerHTML = renderNav(profile, 'projects');
+  renderNotifBell('notif-container');
+  
+  await loadProject();
+  await loadTasks();
+  await loadDelayLog();
+  
+  if (profile.role === 'admin') {
+    document.getElementById('admin-task-btn').innerHTML = `<button class="btn btn-primary" onclick="openTaskModal()">➕ Add Task</button>`;
+    document.getElementById('delay-btn').innerHTML = `<button class="btn btn-warning btn-sm" onclick="openModal('delay-modal')">📅 Update EDD / Log Delay</button>`;
+    loadUsersForSelect();
+  }
+  
+  // Preload dept filter dependency
+  document.getElementById('t-dept').addEventListener('change', () => {
+    const dept = document.getElementById('t-dept').value;
+    loadUsersForSelect(dept);
+  });
+}
+
+async function loadProject() {
+  project = await getProjectById(projectId);
+  
+  if (project.is_delayed) {
+    document.getElementById('project-banner').innerHTML = `
+      <div class="delayed-banner">
+        🚨 This project is currently DELAYED! Deadline has been missed on one or more tasks.
+        ${profile.role === 'admin' ? '<button onclick="openModal(\'delay-modal\')" class="btn btn-sm btn-danger" style="margin-left:auto;">Update EDD</button>' : ''}
+      </div>`;
+  }
+  
+  document.getElementById('project-info').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;align-items:start;">
+      <div>
+        <div class="form-label">Project Code</div>
+        <div style="font-size:20px;font-weight:800;color:var(--primary);">${project.project_code}</div>
+      </div>
+      <div>
+        <div class="form-label">Project Name</div>
+        <div style="font-weight:600;">${project.project_name}</div>
+      </div>
+      <div>
+        <div class="form-label">Customer</div>
+        <div>${project.customer_name || '—'}</div>
+      </div>
+      <div>
+        <div class="form-label">Project Engineer</div>
+        <div>${project.project_engineer || '—'}</div>
+      </div>
+      <div>
+        <div class="form-label">CDD</div>
+        <div>${formatDate(project.cdd)}</div>
+      </div>
+      <div>
+        <div class="form-label">EDD</div>
+        <div>${formatDate(project.edd)} ${deadlineBadge(project.edd, project.status)}</div>
+      </div>
+      <div>
+        <div class="form-label">Status</div>
+        <div>${statusBadge(project.status)}</div>
+      </div>
+      <div>
+        <div class="form-label">PO Date</div>
+        <div>${formatDate(project.po_date)}</div>
+      </div>
+    </div>`;
+}
+
+async function loadTasks() {
+  allTasks = await getTasksByProject(projectId);
+  renderDeptTasks(allTasks);
+}
+
+function renderDeptTasks(tasks) {
+  const container = document.getElementById('dept-tasks-container');
+  if (!tasks.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No tasks yet</div><div class="empty-state-desc">Admin can add department tasks using the button above.</div></div>`;
+    return;
+  }
+  
+  // Group by department
+  const byDept = {};
+  DEPARTMENTS.forEach(d => byDept[d.id] = []);
+  tasks.forEach(t => { if (byDept[t.department]) byDept[t.department].push(t); });
+  
+  const today = new Date().toISOString().split('T')[0];
+  
+  container.innerHTML = `<div class="dept-grid">
+    ${DEPARTMENTS.map(dept => {
+      const dTasks = byDept[dept.id];
+      if (!dTasks.length) return '';
+      const completed = dTasks.filter(t => t.status === 'completed').length;
+      const overdue = dTasks.filter(t => t.status !== 'completed' && t.deadline < today).length;
+      const pct = Math.round((completed/dTasks.length)*100);
+      
+      return `<div class="dept-card">
+        <div class="dept-card-header" style="background:${dept.color};">
+          ${dept.icon} ${dept.label}
+          <span style="margin-left:auto;font-size:12px;font-weight:400;">${completed}/${dTasks.length}</span>
+          ${overdue > 0 ? `<span class="badge" style="background:rgba(255,255,255,0.25);color:white;">⚠ ${overdue}</span>` : ''}
+        </div>
+        <div class="dept-card-body">
+          <div class="progress-wrap" style="margin-bottom:10px;">
+            <div class="progress-bar ${pct<30?'danger':pct<70?'warning':''}" style="width:${pct}%;background:${dept.color};"></div>
+          </div>
+          ${dTasks.map(t => {
+            const isOverdue = t.status !== 'completed' && t.deadline < today;
+            return `<div style="border-bottom:1px solid var(--border);padding:10px 0;${isOverdue ? 'animation:flash 2s infinite;' : ''}">
+              <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                <span style="font-weight:600;font-size:13px;">${t.task_name}</span>
+                ${statusBadge(t.status)}
+              </div>
+              <div style="margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:11px;color:var(--text-muted);">📅 ${formatDate(t.revised_deadline || t.deadline)}</span>
+                ${isOverdue ? '<span class="badge badge-overdue">OVERDUE</span>' : deadlineBadge(t.revised_deadline || t.deadline, t.status)}
+                ${t.assigned_profile ? `<span style="font-size:11px;color:var(--text-muted);">👤 ${t.assigned_profile.full_name}</span>` : ''}
+              </div>
+              <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+                <button onclick="viewTaskUpdates('${t.id}', '${t.task_name.replace(/'/g, '')}')" class="btn btn-sm btn-secondary">💬 Updates</button>
+                ${profile.role === 'admin' ? `
+                  <button onclick="editTask('${t.id}')" class="btn btn-sm btn-secondary">✏️</button>
+                  <button onclick="deleteTaskConfirm('${t.id}')" class="btn btn-sm btn-secondary" style="color:var(--danger)">🗑</button>
+                ` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).filter(Boolean).join('')}
+  </div>`;
+}
+
+function filterTasks() {
+  const dept = document.getElementById('dept-filter').value;
+  const status = document.getElementById('task-status-filter').value;
+  const today = new Date().toISOString().split('T')[0];
+  
+  let filtered = allTasks;
+  if (dept) filtered = filtered.filter(t => t.department === dept);
+  if (status === 'delayed') filtered = filtered.filter(t => t.status !== 'completed' && t.deadline < today);
+  else if (status) filtered = filtered.filter(t => t.status === status);
+  
+  renderDeptTasks(filtered);
+}
+
+async function loadUsersForSelect(dept = null) {
+  const users = dept ? await getUsersByRole(dept) : await getAllUsers();
+  const sel = document.getElementById('t-assign');
+  sel.innerHTML = `<option value="">Select User</option>` +
+    users.map(u => `<option value="${u.id}">${u.full_name} (${u.role})</option>`).join('');
+}
+
+function openTaskModal(taskId = null) {
+  editingTaskId = null;
+  document.getElementById('task-modal-title').textContent = 'Add Department Task';
+  document.getElementById('t-dept').value = '';
+  document.getElementById('t-name').value = '';
+  document.getElementById('t-desc').value = '';
+  document.getElementById('t-deadline').value = '';
+  document.getElementById('t-status').value = 'pending';
+  document.getElementById('t-assign').value = '';
+  openModal('task-modal');
+}
+
+function editTask(id) {
+  const t = allTasks.find(x => x.id === id);
+  if (!t) return;
+  editingTaskId = id;
+  document.getElementById('task-modal-title').textContent = 'Edit Task';
+  document.getElementById('t-dept').value = t.department;
+  document.getElementById('t-name').value = t.task_name;
+  document.getElementById('t-desc').value = t.description || '';
+  document.getElementById('t-deadline').value = t.revised_deadline || t.deadline;
+  document.getElementById('t-status').value = t.status;
+  document.getElementById('t-assign').value = t.assigned_to || '';
+  openModal('task-modal');
+  loadUsersForSelect(t.department);
+}
+
+async function saveTask() {
+  const data = {
+    project_id: projectId,
+    department: document.getElementById('t-dept').value,
+    task_name: document.getElementById('t-name').value.trim(),
+    description: document.getElementById('t-desc').value.trim(),
+    deadline: document.getElementById('t-deadline').value,
+    status: document.getElementById('t-status').value,
+    assigned_to: document.getElementById('t-assign').value || null,
+  };
+  
+  if (!data.department || !data.task_name || !data.deadline) {
+    showToast('Department, task name, and deadline are required', 'error');
+    return;
+  }
+  
+  try {
+    if (editingTaskId) {
+      // Detect deadline change
+      const oldTask = allTasks.find(t => t.id === editingTaskId);
+      if (oldTask && oldTask.deadline !== data.deadline) {
+        data.revised_deadline = data.deadline;
+        delete data.deadline;
+      }
+      await updateTask(editingTaskId, data);
+      showToast('Task updated', 'success');
+    } else {
+      await createTask(data);
+      showToast('Task created', 'success');
+    }
+    closeModal('task-modal');
+    editingTaskId = null;
+    await loadTasks();
+    await loadProject(); // Refresh delay status
+  } catch(e) {
+    showToast(e.message || 'Error saving task', 'error');
+  }
+}
+
+async function deleteTaskConfirm(id) {
+  const t = allTasks.find(x => x.id === id);
+  confirmAction(`Delete task <strong>${t?.task_name}</strong>?`, async () => {
+    try {
+      await deleteTask(id);
+      showToast('Task deleted', 'success');
+      await loadTasks();
+    } catch(e) {
+      showToast(e.message, 'error');
+    }
+  });
+}
+
+async function viewTaskUpdates(taskId, taskName) {
+  document.getElementById('updates-modal-title').textContent = `💬 ${taskName}`;
+  document.getElementById('updates-modal-body').innerHTML = 'Loading...';
+  openModal('updates-modal');
+  
+  const updates = await getTaskUpdates(taskId);
+  const task = allTasks.find(t => t.id === taskId);
+  
+  document.getElementById('updates-modal-body').innerHTML = `
+    ${updates.length === 0 
+      ? '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No updates yet</div></div>'
+      : `<div class="timeline">${updates.map(u => `
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div style="font-size:13px;">${u.update_text}</div>
+              <div class="timeline-time">By ${u.updater?.full_name || 'Unknown'} • ${formatDate(u.created_at)}</div>
+            </div>
+          </div>`).join('')}</div>`
+    }`;
+}
+
+async function saveDelay() {
+  const newEdd = document.getElementById('d-new-edd').value;
+  const reason = document.getElementById('d-reason').value.trim();
+  const dept = document.getElementById('d-dept').value;
+  
+  if (!newEdd || !reason) {
+    showToast('New EDD and reason are required', 'error');
+    return;
+  }
+  
+  try {
+    await logDelay(projectId, project.edd, newEdd, reason, dept);
+    await updateProject(projectId, { edd: newEdd, is_delayed: true, status: 'delayed', delay_reason: reason });
+    showToast('Delay logged and EDD updated', 'warning');
+    closeModal('delay-modal');
+    await loadProject();
+    await loadDelayLog();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function loadDelayLog() {
+  const logs = await getDelayLog(projectId);
+  const el = document.getElementById('delay-log-body');
+  
+  if (!logs.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-title">No delays recorded</div><div class="empty-state-desc">This project has not been delayed yet.</div></div>`;
+    return;
+  }
+  
+  el.innerHTML = `<div class="timeline">
+    ${logs.map(l => `
+      <div class="timeline-item">
+        <div class="timeline-dot" style="background:var(--warning);"></div>
+        <div class="timeline-content">
+          <div style="font-weight:600;margin-bottom:4px;">EDD changed: ${formatDate(l.old_edd)} → ${formatDate(l.new_edd)}</div>
+          <div style="font-size:13px;color:var(--text);">${l.reason}</div>
+          ${l.delayed_by_department ? `<div style="margin-top:4px;">${deptBadge(l.delayed_by_department)}</div>` : ''}
+          <div class="timeline-time">Changed by ${l.changer?.full_name || 'Admin'} • ${formatDate(l.created_at)}</div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+  
+  if (name === 'updates') loadAllUpdates();
+}
+
+async function loadAllUpdates() {
+  const el = document.getElementById('all-updates-body');
+  el.innerHTML = 'Loading...';
+  
+  // Load updates for all tasks
+  const updates = [];
+  for (const task of allTasks) {
+    const taskUpdates = await getTaskUpdates(task.id);
+    taskUpdates.forEach(u => updates.push({ ...u, taskName: task.task_name, department: task.department }));
+  }
+  updates.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  
+  if (!updates.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No updates yet</div></div>`;
+    return;
+  }
+  
+  el.innerHTML = `<div class="timeline">
+    ${updates.map(u => `
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+            ${deptBadge(u.department)}
+            <span style="font-weight:600;font-size:13px;">${u.taskName}</span>
+          </div>
+          <div style="font-size:13px;">${u.update_text}</div>
+          <div class="timeline-time">By ${u.updater?.full_name || 'Unknown'} • ${formatDate(u.created_at)}</div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
