@@ -1,91 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Tracker – Login</title>
-  <link rel="stylesheet" href="css/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
-  <script src="js/supabase.js"></script>
-</head>
-<body>
-<div class="login-page">
-  <div class="login-card">
-    <div class="login-logo">
-      <span class="login-logo-icon">🏭</span>
-      <div class="login-title">Project Tracker</div>
-      <div class="login-subtitle">Manufacturing Project Management System</div>
-    </div>
-
-    <form id="login-form">
-      <div class="form-group" style="margin-bottom:14px;">
-        <label class="form-label">Email Address</label>
-        <input type="email" id="email" class="form-input" placeholder="your@email.com" required>
-      </div>
-      <div class="form-group" style="margin-bottom:20px;">
-        <label class="form-label">Password</label>
-        <input type="password" id="password" class="form-input" placeholder="••••••••" required>
-      </div>
-      <div id="login-error" style="color:#ef4444;font-size:13px;margin-bottom:12px;display:none;"></div>
-      <button type="submit" class="btn btn-primary w-full" id="login-btn" style="justify-content:center;padding:11px;">
-        Sign In
-      </button>
-    </form>
-
-    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);text-align:center;">
-      <p style="font-size:12px;color:var(--text-muted);">
-        Manufacturing Project Tracking System<br>
-        Contact your admin for account access
-      </p>
-    </div>
-  </div>
-</div>
-
-<script>
-initSupabase();
-
-// If already logged in, redirect
-(async () => {
-  const session = await getSession();
-  if (session) {
-    const profile = await getCurrentProfile();
-    if (profile) redirectByRole(profile.role);
-  }
-})();
-
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('login-btn');
-  const errEl = document.getElementById('login-error');
-  
-  btn.textContent = 'Signing in...';
-  btn.disabled = true;
-  errEl.style.display = 'none';
-
-  try {
-    await signIn(
-      document.getElementById('email').value.trim(),
-      document.getElementById('password').value
-    );
-    localStorage.removeItem('currentProfile');
-    const profile = await getCurrentProfile();
-    if (!profile) throw new Error('Profile not found. Contact admin.');
-    redirectByRole(profile.role);
-  } catch (err) {
-    errEl.textContent = err.message || 'Invalid email or password';
-    errEl.style.display = 'block';
-    btn.textContent = 'Sign In';
-    btn.disabled = false;
-  }
-});
-
-function redirectByRole(role) {
-  if (role === 'admin') window.location.href = 'pages/admin-dashboard.html';
-  else if (role === 'hod') window.location.href = 'pages/hod-dashboard.html';
-  else if (role === 'viewer') window.location.href = 'pages/viewer-dashboard.html';
-  else window.location.href = 'pages/dept-dashboard.html';
-}
-</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ManuTrack — Manufacturing Project Intelligence</title>
+    <!-- XLSX library for Excel import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
